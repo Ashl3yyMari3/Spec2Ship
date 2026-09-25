@@ -126,7 +126,9 @@ function parseRequirementBlocks(body: string): RawRequirement[] {
  * @param relativeSourcePath relative path stored on Requirement.sourceFile
  */
 export function parseRequirementFile(filePath: string, relativeSourcePath: string): Requirement[] {
-  const content = fs.readFileSync(filePath, 'utf-8');
+  const content = fs
+    .readFileSync(filePath, 'utf-8')
+    .replace(/\r\n?/g, '\n');
 
   // Extract metadata block (between first --- and second ---)
   let metadata: FileMetadata = { criticality: {}, domain: 'unknown', tags: [] };
