@@ -1,0 +1,23 @@
+# Git internals
+.git/
+
+# Dependencies
+node_modules/
+
+# Build and generated output
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+
+# Environment variables and secrets
+.env
+.env.*
+
+# OS and temporary files
+.DS_Store
+*.log
+
+# Hackathon evidence screenshots
+bob_sessions/*.png
