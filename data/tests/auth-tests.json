@@ -1,0 +1,302 @@
+[
+  {
+    "id": "TC-AUTH-001-01",
+    "title": "Successful user registration with valid credentials",
+    "description": "A new user provides a valid email address and a password of at least 8 characters. The system creates the account and redirects to the dashboard.",
+    "type": "functional",
+    "requirementIds": ["REQ-AUTH-001"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 0 },
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 1 },
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 3 },
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 4 },
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 7 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Happy-path registration covering email format, password length, and post-registration redirect."
+  },
+  {
+    "id": "TC-AUTH-001-02",
+    "title": "Registration rejected when email is missing",
+    "description": "Submitting the registration form without an email address must fail with a validation message, and the user must remain on the registration page.",
+    "type": "negative",
+    "requirementIds": ["REQ-AUTH-001"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 0 },
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 8 },
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 9 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Verifies required-field validation and error message display for missing email."
+  },
+  {
+    "id": "TC-AUTH-001-03",
+    "title": "Registration rejected when password is missing",
+    "description": "Submitting the registration form without a password must fail with a validation message, and the user must remain on the registration page.",
+    "type": "negative",
+    "requirementIds": ["REQ-AUTH-001"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 3 },
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 8 },
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 9 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Verifies required-field validation and error message display for missing password."
+  },
+  {
+    "id": "TC-AUTH-001-04",
+    "title": "Registration rejected when email format is invalid",
+    "description": "Submitting a registration with a malformed email (e.g., 'notanemail') must fail validation. The user remains on the registration page and sees a meaningful error.",
+    "type": "negative",
+    "requirementIds": ["REQ-AUTH-001"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 1 },
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 8 },
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 9 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Tests multiple invalid email patterns: missing @, missing domain, double @ symbol."
+  },
+  {
+    "id": "TC-AUTH-001-05",
+    "title": "Registration rejected for duplicate email address",
+    "description": "Attempting to register with an email address already in use must fail. The user remains on the registration page and receives a meaningful error.",
+    "type": "negative",
+    "requirementIds": ["REQ-AUTH-001"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 2 },
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 8 },
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 9 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Pre-registers an account then attempts re-registration with the same email."
+  },
+  {
+    "id": "TC-AUTH-001-06",
+    "title": "Password boundary — exactly 8 characters accepted",
+    "description": "A password of exactly 8 characters (the minimum) must be accepted during registration.",
+    "type": "boundary",
+    "requirementIds": ["REQ-AUTH-001"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 4 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Lower boundary: 8 chars accepted. Companion test TC-AUTH-001-07 checks 7 chars rejected."
+  },
+  {
+    "id": "TC-AUTH-001-07",
+    "title": "Password boundary — 7 characters rejected",
+    "description": "A password of 7 characters (one below the minimum) must be rejected. The user remains on the registration page with a validation error.",
+    "type": "boundary",
+    "requirementIds": ["REQ-AUTH-001"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 4 },
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 8 },
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 9 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Upper boundary of the rejection zone: 7 chars is just below the minimum threshold."
+  },
+  {
+    "id": "TC-AUTH-001-08",
+    "title": "Email leading and trailing spaces are trimmed before validation",
+    "description": "An email with surrounding whitespace (e.g., '  user@example.com  ') must be trimmed before uniqueness and format checks. Registration must succeed if the trimmed email is valid and unique.",
+    "type": "edge",
+    "requirementIds": ["REQ-AUTH-001"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 5 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Edge case: whitespace-only input should also be treated as empty after trimming."
+  },
+  {
+    "id": "TC-AUTH-001-09",
+    "title": "Email uniqueness check is case-insensitive",
+    "description": "Attempting to register 'USER@EXAMPLE.COM' when 'user@example.com' is already registered must be rejected as a duplicate.",
+    "type": "edge",
+    "requirementIds": ["REQ-AUTH-001"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 2 },
+      { "requirementId": "REQ-AUTH-001", "criterionIndex": 6 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Covers mixed case and all-uppercase variants of an existing registered email."
+  },
+  {
+    "id": "TC-AUTH-002-01",
+    "title": "Successful login with valid credentials",
+    "description": "A registered user provides their correct email and password. The system authenticates them and redirects to the dashboard.",
+    "type": "functional",
+    "requirementIds": ["REQ-AUTH-002"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-002", "criterionIndex": 0 },
+      { "requirementId": "REQ-AUTH-002", "criterionIndex": 2 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Happy-path login covering required fields and post-login redirect."
+  },
+  {
+    "id": "TC-AUTH-002-02",
+    "title": "Login rejected with incorrect password",
+    "description": "Providing a valid email but an incorrect password must not authenticate the user. The error message must not reveal whether the email exists.",
+    "type": "negative",
+    "requirementIds": ["REQ-AUTH-002"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-002", "criterionIndex": 1 },
+      { "requirementId": "REQ-AUTH-002", "criterionIndex": 3 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Verifies generic error messaging — response must not say 'email found but password wrong'."
+  },
+  {
+    "id": "TC-AUTH-002-03",
+    "title": "Login rejected with unknown email address",
+    "description": "Providing an email address that does not exist in the system must not authenticate the user. The error message must be identical to the invalid-password message.",
+    "type": "security",
+    "requirementIds": ["REQ-AUTH-002"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-002", "criterionIndex": 1 },
+      { "requirementId": "REQ-AUTH-002", "criterionIndex": 3 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Security check: error message for unknown email must be indistinguishable from wrong-password error to prevent email enumeration."
+  },
+  {
+    "id": "TC-AUTH-002-04",
+    "title": "Login email is trimmed before authentication",
+    "description": "An email with leading or trailing whitespace (e.g., ' user@example.com ') must be trimmed before authentication. Login must succeed if the trimmed email matches a registered account.",
+    "type": "edge",
+    "requirementIds": ["REQ-AUTH-002"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-002", "criterionIndex": 4 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Mirrors the registration trimming requirement to ensure consistent behaviour."
+  },
+  {
+    "id": "TC-AUTH-002-05",
+    "title": "Login email is case-insensitive",
+    "description": "A user registered as 'user@example.com' must be able to log in as 'USER@EXAMPLE.COM' or 'User@Example.Com'.",
+    "type": "edge",
+    "requirementIds": ["REQ-AUTH-002"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-002", "criterionIndex": 5 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Tests multiple mixed-case variants of the email at login."
+  },
+  {
+    "id": "TC-AUTH-002-06",
+    "title": "Login password is case-sensitive",
+    "description": "Providing the correct email but a password that differs only in case (e.g., 'Password1' vs 'password1') must be rejected.",
+    "type": "security",
+    "requirementIds": ["REQ-AUTH-002"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-002", "criterionIndex": 6 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Ensures the system does not normalise password case, which would weaken security."
+  },
+  {
+    "id": "TC-AUTH-003-01",
+    "title": "Account locks after 5 consecutive failed login attempts",
+    "description": "After 5 consecutive failed login attempts for the same account, the account must be temporarily locked. A 6th attempt must be rejected with a lockout message.",
+    "type": "functional",
+    "requirementIds": ["REQ-AUTH-003"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-003", "criterionIndex": 0 },
+      { "requirementId": "REQ-AUTH-003", "criterionIndex": 3 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Drives exactly 5 failed attempts and asserts the lock activates on attempt 5, then verifies the error message on attempt 6."
+  },
+  {
+    "id": "TC-AUTH-003-02",
+    "title": "Account lockout lasts 15 minutes",
+    "description": "A locked account must remain inaccessible for 15 minutes. Login attempts before 15 minutes must be rejected; a login attempt after 15 minutes must succeed with valid credentials.",
+    "type": "boundary",
+    "requirementIds": ["REQ-AUTH-003"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-003", "criterionIndex": 1 }
+    ],
+    "status": "not_run",
+    "automated": false,
+    "origin": "seeded",
+    "notes": "Boundary: 14m 59s still locked; 15m 01s should unlock. Manual or time-controlled test due to real-time dependency."
+  },
+  {
+    "id": "TC-AUTH-003-03",
+    "title": "Successful login resets the failed-attempt counter",
+    "description": "After a failed login attempt, a subsequent successful login must reset the failed-attempt counter to zero. A fresh sequence of 5 failures should then be required to trigger another lockout.",
+    "type": "functional",
+    "requirementIds": ["REQ-AUTH-003"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-003", "criterionIndex": 2 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Verifies counter reset to prevent cumulative lockout across separate sessions."
+  },
+  {
+    "id": "TC-AUTH-003-04",
+    "title": "Lockout message does not expose sensitive account information",
+    "description": "The lockout response message must be generic and must not disclose the account owner's name, email, lock duration countdown, or any internal state.",
+    "type": "security",
+    "requirementIds": ["REQ-AUTH-003"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-003", "criterionIndex": 3 },
+      { "requirementId": "REQ-AUTH-003", "criterionIndex": 4 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Security check: inspects the response body and headers to confirm no sensitive data leaks."
+  },
+  {
+    "id": "TC-AUTH-003-05",
+    "title": "Boundary — 4 failed attempts do not trigger lockout",
+    "description": "Exactly 4 consecutive failed login attempts must not lock the account. The 5th attempt must still be permitted to authenticate.",
+    "type": "boundary",
+    "requirementIds": ["REQ-AUTH-003"],
+    "acceptanceCriteriaRefs": [
+      { "requirementId": "REQ-AUTH-003", "criterionIndex": 0 }
+    ],
+    "status": "pass",
+    "automated": true,
+    "origin": "seeded",
+    "notes": "Lower boundary of the lockout threshold: 4 failures must not trigger lock (5 must)."
+  }
+]

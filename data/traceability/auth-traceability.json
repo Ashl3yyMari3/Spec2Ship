@@ -1,0 +1,122 @@
+[
+  {
+    "requirementId": "REQ-AUTH-001",
+    "testCaseId": "TC-AUTH-001-01",
+    "coverageType": "full",
+    "notes": "Happy-path registration covers required fields, email format, password length, and redirect."
+  },
+  {
+    "requirementId": "REQ-AUTH-001",
+    "testCaseId": "TC-AUTH-001-02",
+    "coverageType": "partial",
+    "notes": "Covers missing-email validation. Does not exercise uniqueness or password rules."
+  },
+  {
+    "requirementId": "REQ-AUTH-001",
+    "testCaseId": "TC-AUTH-001-03",
+    "coverageType": "partial",
+    "notes": "Covers missing-password validation. Does not exercise email rules."
+  },
+  {
+    "requirementId": "REQ-AUTH-001",
+    "testCaseId": "TC-AUTH-001-04",
+    "coverageType": "partial",
+    "notes": "Covers invalid email format rejection. Does not exercise password or uniqueness rules."
+  },
+  {
+    "requirementId": "REQ-AUTH-001",
+    "testCaseId": "TC-AUTH-001-05",
+    "coverageType": "partial",
+    "notes": "Covers duplicate email rejection. Does not exercise password length rules."
+  },
+  {
+    "requirementId": "REQ-AUTH-001",
+    "testCaseId": "TC-AUTH-001-06",
+    "coverageType": "partial",
+    "notes": "Covers the lower boundary of the password length requirement (exactly 8 chars accepted)."
+  },
+  {
+    "requirementId": "REQ-AUTH-001",
+    "testCaseId": "TC-AUTH-001-07",
+    "coverageType": "partial",
+    "notes": "Covers the rejection boundary for password length (7 chars rejected)."
+  },
+  {
+    "requirementId": "REQ-AUTH-001",
+    "testCaseId": "TC-AUTH-001-08",
+    "coverageType": "full",
+    "notes": "Covers the email trimming requirement end-to-end including whitespace-only edge case."
+  },
+  {
+    "requirementId": "REQ-AUTH-001",
+    "testCaseId": "TC-AUTH-001-09",
+    "coverageType": "full",
+    "notes": "Covers case-insensitive uniqueness check for duplicate email detection."
+  },
+  {
+    "requirementId": "REQ-AUTH-002",
+    "testCaseId": "TC-AUTH-002-01",
+    "coverageType": "full",
+    "notes": "Happy-path login covering required fields and post-login redirect."
+  },
+  {
+    "requirementId": "REQ-AUTH-002",
+    "testCaseId": "TC-AUTH-002-02",
+    "coverageType": "partial",
+    "notes": "Covers invalid credentials rejection and generic error messaging (wrong password path)."
+  },
+  {
+    "requirementId": "REQ-AUTH-002",
+    "testCaseId": "TC-AUTH-002-03",
+    "coverageType": "partial",
+    "notes": "Covers invalid credentials rejection and email enumeration prevention (unknown email path)."
+  },
+  {
+    "requirementId": "REQ-AUTH-002",
+    "testCaseId": "TC-AUTH-002-04",
+    "coverageType": "full",
+    "notes": "Covers email trimming at login, consistent with registration trimming behaviour."
+  },
+  {
+    "requirementId": "REQ-AUTH-002",
+    "testCaseId": "TC-AUTH-002-05",
+    "coverageType": "full",
+    "notes": "Covers case-insensitive email authentication."
+  },
+  {
+    "requirementId": "REQ-AUTH-002",
+    "testCaseId": "TC-AUTH-002-06",
+    "coverageType": "full",
+    "notes": "Covers case-sensitive password enforcement."
+  },
+  {
+    "requirementId": "REQ-AUTH-003",
+    "testCaseId": "TC-AUTH-003-01",
+    "coverageType": "full",
+    "notes": "Covers lockout trigger after 5 consecutive failures and generic lockout message."
+  },
+  {
+    "requirementId": "REQ-AUTH-003",
+    "testCaseId": "TC-AUTH-003-02",
+    "coverageType": "partial",
+    "notes": "Covers lockout duration boundary (15 minutes). Marked not_run due to time dependency."
+  },
+  {
+    "requirementId": "REQ-AUTH-003",
+    "testCaseId": "TC-AUTH-003-03",
+    "coverageType": "full",
+    "notes": "Covers counter reset on successful authentication."
+  },
+  {
+    "requirementId": "REQ-AUTH-003",
+    "testCaseId": "TC-AUTH-003-04",
+    "coverageType": "full",
+    "notes": "Covers generic lockout message and no sensitive data exposure in lockout response."
+  },
+  {
+    "requirementId": "REQ-AUTH-003",
+    "testCaseId": "TC-AUTH-003-05",
+    "coverageType": "full",
+    "notes": "Covers lower threshold boundary: 4 failures must not trigger lockout."
+  }
+]
