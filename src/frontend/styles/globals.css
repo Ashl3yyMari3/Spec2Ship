@@ -331,3 +331,87 @@ body {
     padding: 20px 16px;
   }
 }
+
+/* ---- Print styles ---- */
+
+@media print {
+  /* Hide layout chrome */
+  .layout__header,
+  .layout__sidebar {
+    display: none !important;
+  }
+
+  /* Expand main to full width */
+  .layout__main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Hide interactive controls */
+  .report-actions,
+  button,
+  select {
+    display: none !important;
+  }
+
+  /* Reset page box model */
+  html, body, #root {
+    height: auto !important;
+  }
+
+  body {
+    font-size: 12px;
+    color: #000;
+    background: #fff;
+  }
+
+  /* Keep cards visible but strip shadows */
+  .card {
+    box-shadow: none;
+    border: 1px solid #ccc;
+    break-inside: avoid;
+  }
+
+  /* Avoid breaking table rows across pages */
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  /* Verdict banner — ensure legible in B&W */
+  [role="alert"],
+  [role="status"] {
+    border: 2px solid #000 !important;
+    background: #f9f9f9 !important;
+    color: #000 !important;
+  }
+
+  /* Links */
+  a[href]::after {
+    content: none;
+  }
+
+  /* Section breaks */
+  section {
+    break-inside: avoid;
+  }
+
+  /* Hide overflow wrappers */
+  .layout__body {
+    display: block !important;
+  }
+}
