@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Requirement, TraceabilityMatrix, Criticality } from '@backend/types/models';
+import type { Requirement, TraceabilityMatrix, Criticality, CoverageType } from '@backend/types/models';
 
 // ---------------------------------------------------------------------------
 // Coverage logic
@@ -200,6 +200,311 @@ function FilterBar({ filters, onChange }: FilterBarProps): React.ReactElement {
 }
 
 // ---------------------------------------------------------------------------
+// Requirement × Test-Case Grid
+// ---------------------------------------------------------------------------
+
+/** Returns the link coverage type between a requirement and a test case, or null if uncovered. */
+function getCellCoverage(
+  reqId: string,
+  tcId: string,
+  matrix: TraceabilityMatrix,
+): CoverageType | null {
+  const link = matrix.links.find(
+    (l) => l.requirementId === reqId && l.testCaseId === tcId,
+  );
+  return link ? link.coverageType : null;
+}
+
+interface GridCellProps {
+  reqId: string;
+  tcId: string;
+  coverage: CoverageType | null;
+}
+
+function GridCell({ reqId, tcId, coverage }: GridCellProps): React.ReactElement {
+  let symbol: string;
+  let label: string;
+  let ariaLabel: string;
+  let cellStyle: React.CSSProperties;
+
+  if (coverage === 'full') {
+    symbol = '✓';
+    label = 'Full';
+    ariaLabel = `${reqId} covered by ${tcId}`;
+    cellStyle = {
+      background: '#f0fdf4',
+      color: '#166534',
+      fontWeight: 700,
+    };
+  } else if (coverage === 'partial') {
+    symbol = '◐';
+    label = 'Partial';
+    ariaLabel = `${reqId} partially covered by ${tcId}`;
+    cellStyle = {
+      background: '#fff7ed',
+      color: '#9a3412',
+      fontWeight: 700,
+    };
+  } else {
+    symbol = '—';
+    label = 'None';
+    ariaLabel = `${reqId} not covered by ${tcId}`;
+    cellStyle = {
+      background: 'transparent',
+      color: 'var(--color-muted)',
+    };
+  }
+
+  return (
+    <td
+      aria-label={ariaLabel}
+      style={{
+        padding: '8px 6px',
+        textAlign: 'center',
+        borderBottom: '1px solid var(--color-border)',
+        borderRight: '1px solid var(--color-border)',
+        whiteSpace: 'nowrap',
+        ...cellStyle,
+      }}
+    >
+      <span aria-hidden="true" style={{ fontSize: '13px', display: 'block', lineHeight: 1 }}>
+        {symbol}
+      </span>
+      <span
+        style={{
+          fontSize: '9px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+          display: 'block',
+          marginTop: '2px',
+          fontWeight: 600,
+        }}
+      >
+        {label}
+      </span>
+    </td>
+  );
+}
+
+interface RequirementTestGridProps {
+  requirements: Requirement[];
+  matrix: TraceabilityMatrix;
+}
+
+function RequirementTestGrid({
+  requirements,
+  matrix,
+}: RequirementTestGridProps): React.ReactElement {
+  // Collect the set of test cases that appear in at least one link involving
+  // any of the currently visible requirements, then fall back to all test cases
+  // that are linked to any requirement.  Keep ordering stable (by tc.id).
+  const visibleReqIds = new Set(requirements.map((r) => r.id));
+
+  const relevantTcIds = new Set<string>();
+  for (const link of matrix.links) {
+    if (visibleReqIds.has(link.requirementId)) {
+      relevantTcIds.add(link.testCaseId);
+    }
+  }
+
+  // Also include test cases referenced via testCase.requirementIds (mirrors
+  // the logic in getLinkedTestCount so the grid stays consistent).
+  for (const tc of matrix.testCases) {
+    if (tc.requirementIds.some((rid) => visibleReqIds.has(rid))) {
+      relevantTcIds.add(tc.id);
+    }
+  }
+
+  const tcById = new Map(matrix.testCases.map((tc) => [tc.id, tc]));
+  const columns = Array.from(relevantTcIds)
+    .map((id) => tcById.get(id))
+    .filter((tc): tc is NonNullable<typeof tc> => tc !== undefined)
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  if (columns.length === 0) {
+    return (
+      <p
+        className="state-message"
+        role="status"
+        style={{ fontSize: '13px', color: 'var(--color-muted)', fontStyle: 'italic' }}
+      >
+        No test cases are linked to the visible requirements.
+      </p>
+    );
+  }
+
+  const gridSectionHeadingStyle: React.CSSProperties = {
+    fontSize: '11px',
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    color: 'var(--color-muted)',
+    margin: '0 0 8px 0',
+  };
+
+  const legendItems: { symbol: string; label: string; style: React.CSSProperties }[] = [
+    { symbol: '✓', label: 'Full coverage', style: { color: '#166534', fontWeight: 700 } },
+    { symbol: '◐', label: 'Partial coverage', style: { color: '#9a3412', fontWeight: 700 } },
+    { symbol: '—', label: 'No coverage', style: { color: 'var(--color-muted)' } },
+  ];
+
+  return (
+    <div style={{ marginTop: '28px' }}>
+      {/* Section heading */}
+      <h2
+        style={{
+          fontSize: '14px',
+          fontWeight: 700,
+          color: 'var(--color-text)',
+          marginBottom: '6px',
+        }}
+      >
+        Requirement × Test-Case Coverage Grid
+      </h2>
+
+      {/* Legend */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '16px',
+          flexWrap: 'wrap',
+          marginBottom: '10px',
+        }}
+        aria-label="Grid legend"
+      >
+        {legendItems.map(({ symbol, label, style }) => (
+          <span
+            key={label}
+            style={{ fontSize: '12px', color: 'var(--color-muted)', display: 'flex', gap: '4px', alignItems: 'center' }}
+          >
+            <span style={{ fontSize: '14px', ...style }} aria-hidden="true">{symbol}</span>
+            {label}
+          </span>
+        ))}
+      </div>
+
+      {/* Scrollable container */}
+      <div
+        style={{
+          overflowX: 'auto',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius)',
+          boxShadow: 'var(--shadow-sm)',
+        }}
+      >
+        <table
+          style={{
+            borderCollapse: 'collapse',
+            fontSize: '12px',
+            background: 'var(--color-bg)',
+            tableLayout: 'auto',
+          }}
+          aria-label="Requirement by test-case coverage grid"
+        >
+          <thead>
+            <tr style={{ background: 'var(--color-surface)', borderBottom: '2px solid var(--color-border)' }}>
+              {/* Top-left corner cell */}
+              <th
+                scope="col"
+                style={{
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  fontWeight: 600,
+                  fontSize: '10px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  color: 'var(--color-muted)',
+                  whiteSpace: 'nowrap',
+                  borderRight: '2px solid var(--color-border)',
+                  minWidth: '140px',
+                  position: 'sticky',
+                  left: 0,
+                  background: 'var(--color-surface)',
+                  zIndex: 1,
+                }}
+              >
+                Requirement
+              </th>
+              {columns.map((tc) => (
+                <th
+                  key={tc.id}
+                  scope="col"
+                  title={tc.title}
+                  style={{
+                    padding: '8px 6px',
+                    textAlign: 'center',
+                    fontWeight: 600,
+                    fontSize: '10px',
+                    color: 'var(--color-muted)',
+                    whiteSpace: 'nowrap',
+                    borderRight: '1px solid var(--color-border)',
+                    maxWidth: '90px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    writingMode: 'vertical-rl',
+                    transform: 'rotate(180deg)',
+                    height: '80px',
+                    verticalAlign: 'bottom',
+                  }}
+                >
+                  {tc.id}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {requirements.map((req, idx) => (
+              <tr
+                key={req.id}
+                style={{
+                  background: idx % 2 === 0 ? 'var(--color-bg)' : 'var(--color-surface)',
+                }}
+              >
+                {/* Row header — sticky so requirement ID stays visible while scrolling */}
+                <th
+                  scope="row"
+                  style={{
+                    padding: '8px 12px',
+                    textAlign: 'left',
+                    fontFamily: 'monospace',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: 'var(--color-accent)',
+                    whiteSpace: 'nowrap',
+                    borderRight: '2px solid var(--color-border)',
+                    borderBottom: '1px solid var(--color-border)',
+                    position: 'sticky',
+                    left: 0,
+                    background: idx % 2 === 0 ? 'var(--color-bg)' : 'var(--color-surface)',
+                    zIndex: 1,
+                  }}
+                >
+                  {req.id}
+                </th>
+                {columns.map((tc) => (
+                  <GridCell
+                    key={tc.id}
+                    reqId={req.id}
+                    tcId={tc.id}
+                    coverage={getCellCoverage(req.id, tc.id, matrix)}
+                  />
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Column count note */}
+      <p style={{ ...gridSectionHeadingStyle, marginTop: '6px' }} aria-live="polite">
+        {requirements.length} requirement{requirements.length !== 1 ? 's' : ''} ×{' '}
+        {columns.length} test case{columns.length !== 1 ? 's' : ''}
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main matrix component
 // ---------------------------------------------------------------------------
 
@@ -248,132 +553,138 @@ export default function TraceabilityMatrix({
             : 'No requirements match your current filters.'}
         </p>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table
-            style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              fontSize: '13.5px',
-              background: 'var(--color-bg)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius)',
-              boxShadow: 'var(--shadow-sm)',
-            }}
-            aria-label="Traceability matrix"
-          >
-            <thead>
-              <tr
-                style={{
-                  background: 'var(--color-surface)',
-                  borderBottom: '2px solid var(--color-border)',
-                }}
-              >
-                {['ID', 'Title', 'Criticality', 'Coverage', 'Tests', 'Changed'].map((col) => (
-                  <th
-                    key={col}
-                    scope="col"
-                    style={{
-                      padding: '10px 14px',
-                      textAlign: 'left',
-                      fontWeight: 600,
-                      fontSize: '11px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                      color: 'var(--color-muted)',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {col}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRequirements.map((req, idx) => {
-                const coverageStatus = computeCoverageStatus(req, matrix);
-                const testCount = getLinkedTestCount(req, matrix);
-                const isSelected = req.id === selectedRequirementId;
-                const isEven = idx % 2 === 0;
-
-                return (
-                  <tr
-                    key={req.id}
-                    onClick={() => onSelectRequirement(req.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        onSelectRequirement(req.id);
-                      }
-                    }}
-                    tabIndex={0}
-                    role="row"
-                    aria-selected={isSelected}
-                    style={{
-                      cursor: 'pointer',
-                      background: isSelected
-                        ? '#eff6ff'
-                        : isEven
-                        ? 'var(--color-bg)'
-                        : 'var(--color-surface)',
-                      borderBottom: '1px solid var(--color-border)',
-                      outline: isSelected ? '2px solid var(--color-accent)' : undefined,
-                      outlineOffset: '-2px',
-                      transition: 'background 0.1s',
-                    }}
-                  >
-                    <td
+        <>
+          {/* Requirements summary table */}
+          <div style={{ overflowX: 'auto' }}>
+            <table
+              style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                fontSize: '13.5px',
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius)',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+              aria-label="Requirements summary table"
+            >
+              <thead>
+                <tr
+                  style={{
+                    background: 'var(--color-surface)',
+                    borderBottom: '2px solid var(--color-border)',
+                  }}
+                >
+                  {['ID', 'Title', 'Criticality', 'Coverage', 'Tests', 'Changed'].map((col) => (
+                    <th
+                      key={col}
+                      scope="col"
                       style={{
                         padding: '10px 14px',
-                        fontFamily: 'monospace',
-                        fontSize: '12px',
-                        color: 'var(--color-accent)',
+                        textAlign: 'left',
                         fontWeight: 600,
+                        fontSize: '11px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        color: 'var(--color-muted)',
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {req.id}
-                    </td>
-                    <td
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRequirements.map((req, idx) => {
+                  const coverageStatus = computeCoverageStatus(req, matrix);
+                  const testCount = getLinkedTestCount(req, matrix);
+                  const isSelected = req.id === selectedRequirementId;
+                  const isEven = idx % 2 === 0;
+
+                  return (
+                    <tr
+                      key={req.id}
+                      onClick={() => onSelectRequirement(req.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onSelectRequirement(req.id);
+                        }
+                      }}
+                      tabIndex={0}
+                      role="row"
+                      aria-selected={isSelected}
                       style={{
-                        padding: '10px 14px',
-                        fontWeight: isSelected ? 600 : 400,
-                        color: 'var(--color-text)',
-                        maxWidth: '300px',
+                        cursor: 'pointer',
+                        background: isSelected
+                          ? '#eff6ff'
+                          : isEven
+                          ? 'var(--color-bg)'
+                          : 'var(--color-surface)',
+                        borderBottom: '1px solid var(--color-border)',
+                        outline: isSelected ? '2px solid var(--color-accent)' : undefined,
+                        outlineOffset: '-2px',
+                        transition: 'background 0.1s',
                       }}
                     >
-                      {req.title}
-                    </td>
-                    <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                      <span className={criticalityClass(req.criticality)}>
-                        {criticalityLabel(req.criticality)}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                      <CoverageBadge status={coverageStatus} />
-                    </td>
-                    <td
-                      style={{
-                        padding: '10px 14px',
-                        textAlign: 'center',
-                        color: testCount === 0 ? 'var(--color-muted)' : 'var(--color-text)',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {testCount}
-                    </td>
-                    <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                      {req.changed ? (
-                        <span className="badge badge--high">Changed</span>
-                      ) : (
-                        <span style={{ color: 'var(--color-muted)', fontSize: '12px' }}>—</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      <td
+                        style={{
+                          padding: '10px 14px',
+                          fontFamily: 'monospace',
+                          fontSize: '12px',
+                          color: 'var(--color-accent)',
+                          fontWeight: 600,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {req.id}
+                      </td>
+                      <td
+                        style={{
+                          padding: '10px 14px',
+                          fontWeight: isSelected ? 600 : 400,
+                          color: 'var(--color-text)',
+                          maxWidth: '300px',
+                        }}
+                      >
+                        {req.title}
+                      </td>
+                      <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                        <span className={criticalityClass(req.criticality)}>
+                          {criticalityLabel(req.criticality)}
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                        <CoverageBadge status={coverageStatus} />
+                      </td>
+                      <td
+                        style={{
+                          padding: '10px 14px',
+                          textAlign: 'center',
+                          color: testCount === 0 ? 'var(--color-muted)' : 'var(--color-text)',
+                          fontWeight: 500,
+                        }}
+                      >
+                        {testCount}
+                      </td>
+                      <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                        {req.changed ? (
+                          <span className="badge badge--high">Changed</span>
+                        ) : (
+                          <span style={{ color: 'var(--color-muted)', fontSize: '12px' }}>—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Requirement × Test-Case Coverage Grid */}
+          <RequirementTestGrid requirements={filteredRequirements} matrix={matrix} />
+        </>
       )}
     </div>
   );
