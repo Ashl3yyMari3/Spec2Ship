@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <!-- Main planet body gradient - lit from top-left -->
+    <radialGradient id="planetBody" cx="38%" cy="32%" r="58%">
+      <stop offset="0%" stop-color="#A78BFA"/>
+      <stop offset="25%" stop-color="#7C3AED"/>
+      <stop offset="55%" stop-color="#4C1D95"/>
+      <stop offset="80%" stop-color="#2D1B69"/>
+      <stop offset="100%" stop-color="#1A0F3E"/>
+    </radialGradient>
+    <!-- Atmospheric rim gradient -->
+    <radialGradient id="atmRim" cx="50%" cy="50%" r="50%">
+      <stop offset="72%" stop-color="transparent"/>
+      <stop offset="85%" stop-color="#7C3AED" stop-opacity="0.3"/>
+      <stop offset="92%" stop-color="#A78BFA" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#C4B5FD" stop-opacity="0.15"/>
+    </radialGradient>
+    <!-- Surface texture bands -->
+    <linearGradient id="band1" x1="0%" y1="0%" x2="100%" y2="15%">
+      <stop offset="0%" stop-color="#6D28D9" stop-opacity="0"/>
+      <stop offset="30%" stop-color="#7C3AED" stop-opacity="0.25"/>
+      <stop offset="60%" stop-color="#5B21B6" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#4C1D95" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="band2" x1="0%" y1="0%" x2="100%" y2="25%">
+      <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0"/>
+      <stop offset="40%" stop-color="#A78BFA" stop-opacity="0.15"/>
+      <stop offset="70%" stop-color="#7C3AED" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#5B21B6" stop-opacity="0"/>
+    </linearGradient>
+    <!-- Shadow overlay -->
+    <radialGradient id="shadow" cx="72%" cy="68%" r="55%">
+      <stop offset="0%" stop-color="#050816" stop-opacity="0.7"/>
+      <stop offset="50%" stop-color="#050816" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+    <!-- Outer glow -->
+    <radialGradient id="outerGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="78%" stop-color="transparent"/>
+      <stop offset="90%" stop-color="#7C3AED" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#A78BFA" stop-opacity="0.05"/>
+    </radialGradient>
+    <!-- Highlight specular -->
+    <radialGradient id="specular" cx="35%" cy="28%" r="30%">
+      <stop offset="0%" stop-color="#EDE9FE" stop-opacity="0.4"/>
+      <stop offset="60%" stop-color="#C4B5FD" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+    <clipPath id="planetClip">
+      <circle cx="200" cy="200" r="145"/>
+    </clipPath>
+    <filter id="softBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+    <filter id="glowFilter" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Outer atmospheric glow ring -->
+  <circle cx="200" cy="200" r="175" fill="none" stroke="#7C3AED" stroke-width="1" opacity="0.2" filter="url(#softBlur)"/>
+  <circle cx="200" cy="200" r="162" fill="url(#outerGlow)"/>
+
+  <!-- Planet body -->
+  <circle cx="200" cy="200" r="145" fill="url(#planetBody)"/>
+
+  <!-- Surface detail bands (clipped to sphere) -->
+  <g clip-path="url(#planetClip)">
+    <ellipse cx="200" cy="165" rx="145" ry="22" fill="url(#band1)" transform="rotate(-8 200 165)" opacity="0.8"/>
+    <ellipse cx="200" cy="200" rx="145" ry="18" fill="url(#band2)" transform="rotate(-6 200 200)" opacity="0.7"/>
+    <ellipse cx="200" cy="235" rx="145" ry="20" fill="url(#band1)" transform="rotate(-10 200 235)" opacity="0.5"/>
+    <ellipse cx="190" cy="182" rx="80" ry="8" fill="#8B5CF6" opacity="0.12"/>
+    <ellipse cx="215" cy="218" rx="90" ry="7" fill="#6D28D9" opacity="0.1"/>
+  </g>
+
+  <!-- Shadow (terminator line) -->
+  <circle cx="200" cy="200" r="145" fill="url(#shadow)"/>
+
+  <!-- Atmospheric rim light -->
+  <circle cx="200" cy="200" r="145" fill="url(#atmRim)"/>
+
+  <!-- Specular highlight (light reflection) -->
+  <circle cx="200" cy="200" r="145" fill="url(#specular)"/>
+
+  <!-- Atmospheric haze ring -->
+  <circle cx="200" cy="200" r="148" fill="none" stroke="#A78BFA" stroke-width="3" opacity="0.2"/>
+  <circle cx="200" cy="200" r="151" fill="none" stroke="#7C3AED" stroke-width="2" opacity="0.1"/>
+</svg>

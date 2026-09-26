@@ -74,16 +74,16 @@ function originLabel(o: TestOrigin): string {
 
 function CoverageTypeBadge({ type }: { type: CoverageType | null }): React.ReactElement | null {
   if (!type) return null;
-  const styles: Record<CoverageType, React.CSSProperties> = {
-    full: { background: '#f0fdf4', color: '#166534', border: '1px solid #86efac' },
-    partial: { background: '#fff7ed', color: '#9a3412', border: '1px solid #fdba74' },
+  const classMap: Record<CoverageType, string> = {
+    full:    'badge coverage-badge-full',
+    partial: 'badge coverage-badge-partial',
   };
   const labels: Record<CoverageType, string> = {
-    full: 'Full Coverage',
+    full:    'Full Coverage',
     partial: 'Partial Coverage',
   };
   return (
-    <span className="badge" style={styles[type]}>
+    <span className={classMap[type]}>
       {labels[type]}
     </span>
   );
@@ -91,11 +91,11 @@ function CoverageTypeBadge({ type }: { type: CoverageType | null }): React.React
 
 const fieldLabelStyle: React.CSSProperties = {
   fontSize: '10px',
-  fontWeight: 600,
+  fontWeight: 700,
   textTransform: 'uppercase',
-  letterSpacing: '0.06em',
-  color: 'var(--color-muted)',
-  marginBottom: '2px',
+  letterSpacing: '0.07em',
+  color: 'var(--text-muted)',
+  marginBottom: '4px',
 };
 
 // ---------------------------------------------------------------------------
@@ -106,11 +106,11 @@ export default function LinkedTests({ requirementId, matrix }: Props): React.Rea
   const linked = getLinkedTestCases(requirementId, matrix);
 
   const sectionHeadingStyle: React.CSSProperties = {
-    fontSize: '11px',
-    fontWeight: 600,
+    fontSize: '10px',
+    fontWeight: 700,
     textTransform: 'uppercase',
-    letterSpacing: '0.06em',
-    color: 'var(--color-muted)',
+    letterSpacing: '0.07em',
+    color: 'var(--text-muted)',
     marginBottom: '10px',
   };
 
@@ -118,7 +118,7 @@ export default function LinkedTests({ requirementId, matrix }: Props): React.Rea
     return (
       <div>
         <p style={sectionHeadingStyle}>Linked Test Cases</p>
-        <p style={{ fontSize: '13px', color: 'var(--color-muted)', fontStyle: 'italic' }}>
+        <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
           No test cases are currently linked to this requirement.
         </p>
       </div>
@@ -138,10 +138,10 @@ export default function LinkedTests({ requirementId, matrix }: Props): React.Rea
           <div
             key={tc.id}
             style={{
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius)',
+              border: '1px solid var(--border-glass)',
+              borderRadius: 'var(--radius-md)',
               padding: '12px 16px',
-              background: 'var(--color-bg)',
+              background: 'rgba(139, 92, 246, 0.05)',
             }}
           >
             {/* Header row */}
@@ -156,11 +156,15 @@ export default function LinkedTests({ requirementId, matrix }: Props): React.Rea
             >
               <span
                 style={{
-                  fontFamily: 'monospace',
+                  fontFamily: "'SF Mono', 'Fira Code', monospace",
                   fontSize: '11px',
-                  fontWeight: 600,
-                  color: 'var(--color-accent)',
-                  letterSpacing: '0.05em',
+                  fontWeight: 700,
+                  color: 'var(--violet-light)',
+                  background: 'rgba(139,92,246,0.12)',
+                  border: '1px solid rgba(139,92,246,0.25)',
+                  borderRadius: 6,
+                  padding: '1px 6px',
+                  letterSpacing: '0.06em',
                 }}
               >
                 {tc.id}
@@ -169,7 +173,7 @@ export default function LinkedTests({ requirementId, matrix }: Props): React.Rea
                 style={{
                   fontSize: '13.5px',
                   fontWeight: 600,
-                  color: 'var(--color-text)',
+                  color: 'var(--text-primary)',
                   flex: 1,
                   minWidth: '160px',
                 }}
@@ -196,7 +200,7 @@ export default function LinkedTests({ requirementId, matrix }: Props): React.Rea
               {tc.description && (
                 <div>
                   <dt style={fieldLabelStyle}>Description</dt>
-                  <dd style={{ fontSize: '13px', color: 'var(--color-muted)', lineHeight: 1.5 }}>
+                  <dd style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                     {tc.description}
                   </dd>
                 </div>
@@ -204,7 +208,7 @@ export default function LinkedTests({ requirementId, matrix }: Props): React.Rea
               {notes && (
                 <div style={{ marginTop: '4px' }}>
                   <dt style={fieldLabelStyle}>Notes</dt>
-                  <dd style={{ fontSize: '13px', color: 'var(--color-muted)', lineHeight: 1.5 }}>
+                  <dd style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                     {notes}
                   </dd>
                 </div>

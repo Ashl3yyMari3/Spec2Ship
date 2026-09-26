@@ -26,7 +26,24 @@ export default function RequirementsList({ requirements }: Props): React.ReactEl
     <section aria-label="Requirements list">
       {requirements.map((req) => (
         <article key={req.id} className="card" aria-labelledby={`req-title-${req.id}`}>
-          <p className="card__id">{req.id}</p>
+          {/* ID pill */}
+          <p
+            style={{
+              display: 'inline-block',
+              fontFamily: "'SF Mono', 'Fira Code', monospace",
+              fontSize: 11,
+              fontWeight: 700,
+              color: 'var(--violet-light)',
+              background: 'rgba(139,92,246,0.12)',
+              border: '1px solid rgba(139,92,246,0.25)',
+              borderRadius: 8,
+              padding: '2px 8px',
+              marginBottom: 6,
+              letterSpacing: '0.06em',
+            }}
+          >
+            {req.id}
+          </p>
 
           <h2 className="card__title" id={`req-title-${req.id}`}>
             {req.title}
@@ -51,7 +68,15 @@ export default function RequirementsList({ requirements }: Props): React.ReactEl
           </div>
 
           {req.acceptanceCriteria.length > 0 && (
-            <div>
+            <div
+              style={{
+                background: 'rgba(139,92,246,0.06)',
+                border: '1px solid rgba(139,92,246,0.12)',
+                borderRadius: 'var(--radius-md)',
+                padding: '12px 16px',
+                marginTop: 4,
+              }}
+            >
               <p className="ac-section__heading">Acceptance Criteria</p>
               <ol className="ac-list" aria-label={`Acceptance criteria for ${req.id}`}>
                 {req.acceptanceCriteria.map((criterion, index) => (

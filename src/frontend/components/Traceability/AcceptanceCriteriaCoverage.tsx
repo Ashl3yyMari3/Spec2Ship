@@ -30,11 +30,11 @@ function buildCriterionCoverage(
 }
 
 const sectionHeadingStyle: React.CSSProperties = {
-  fontSize: '11px',
-  fontWeight: 600,
+  fontSize: '10px',
+  fontWeight: 700,
   textTransform: 'uppercase',
-  letterSpacing: '0.06em',
-  color: 'var(--color-muted)',
+  letterSpacing: '0.07em',
+  color: 'var(--text-muted)',
   marginBottom: '10px',
 };
 
@@ -46,7 +46,7 @@ export default function AcceptanceCriteriaCoverage({
     return (
       <div>
         <p style={sectionHeadingStyle}>Acceptance Criteria Coverage</p>
-        <p style={{ fontSize: '13px', color: 'var(--color-muted)', fontStyle: 'italic' }}>
+        <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
           No acceptance criteria available.
         </p>
       </div>
@@ -72,9 +72,9 @@ export default function AcceptanceCriteriaCoverage({
                 gap: '10px',
                 padding: '10px 12px',
                 border: '1px solid',
-                borderColor: isCovered ? '#86efac' : 'var(--color-border)',
-                borderRadius: 'var(--radius)',
-                background: isCovered ? '#f0fdf4' : 'var(--color-surface)',
+                borderColor: isCovered ? 'var(--low-border)' : 'var(--border-glass)',
+                borderRadius: 'var(--radius-md)',
+                background: isCovered ? 'rgba(16, 185, 129, 0.08)' : 'rgba(139, 92, 246, 0.04)',
                 alignItems: 'flex-start',
               }}
             >
@@ -85,8 +85,8 @@ export default function AcceptanceCriteriaCoverage({
                   width: '22px',
                   height: '22px',
                   borderRadius: '50%',
-                  background: isCovered ? '#22c55e' : 'var(--color-border)',
-                  color: isCovered ? '#fff' : 'var(--color-muted)',
+                  background: isCovered ? 'var(--low-bright)' : 'rgba(139, 92, 246, 0.18)',
+                  color: isCovered ? '#fff' : 'var(--text-muted)',
                   fontSize: '11px',
                   fontWeight: 700,
                   display: 'flex',
@@ -101,7 +101,7 @@ export default function AcceptanceCriteriaCoverage({
 
               {/* Content */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: '13px', color: 'var(--color-text)', margin: 0, lineHeight: 1.5 }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-primary)', margin: 0, lineHeight: 1.5 }}>
                   {item.text}
                 </p>
                 <div
@@ -115,18 +115,7 @@ export default function AcceptanceCriteriaCoverage({
                 >
                   {isCovered ? (
                     <>
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          color: '#166534',
-                          background: '#dcfce7',
-                          border: '1px solid #86efac',
-                          borderRadius: '10px',
-                          padding: '1px 8px',
-                        }}
-                        aria-label="Covered"
-                      >
+                      <span className="badge badge--pass" aria-label="Covered">
                         Covered
                       </span>
                       {item.coveredByTestIds.map((tcId) => (
@@ -140,18 +129,7 @@ export default function AcceptanceCriteriaCoverage({
                       ))}
                     </>
                   ) : (
-                    <span
-                      style={{
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        color: '#991b1b',
-                        background: '#fef2f2',
-                        border: '1px solid #fca5a5',
-                        borderRadius: '10px',
-                        padding: '1px 8px',
-                      }}
-                      aria-label="Not covered"
-                    >
+                    <span className="badge badge--fail" aria-label="Not covered">
                       Not Covered
                     </span>
                   )}

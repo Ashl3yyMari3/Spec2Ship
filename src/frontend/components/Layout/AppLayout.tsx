@@ -6,6 +6,7 @@ import Sidebar from './Sidebar';
 export default function AppLayout(): React.ReactElement {
   return (
     <div className="layout">
+      {/* Cosmic star-field dots via inline pseudo CSS fallback */}
       <Header />
       <div className="layout__body">
         <Sidebar />

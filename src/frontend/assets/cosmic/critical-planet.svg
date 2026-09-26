@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <defs>
+    <radialGradient id="critBody" cx="35%" cy="30%" r="58%">
+      <stop offset="0%" stop-color="#FCA5A5"/>
+      <stop offset="20%" stop-color="#F87171"/>
+      <stop offset="45%" stop-color="#DC2626"/>
+      <stop offset="70%" stop-color="#991B1B"/>
+      <stop offset="100%" stop-color="#450A0A"/>
+    </radialGradient>
+    <radialGradient id="critRim" cx="50%" cy="50%" r="50%">
+      <stop offset="70%" stop-color="transparent"/>
+      <stop offset="84%" stop-color="#EF4444" stop-opacity="0.4"/>
+      <stop offset="93%" stop-color="#FCA5A5" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#FEE2E2" stop-opacity="0.1"/>
+    </radialGradient>
+    <radialGradient id="critShadow" cx="70%" cy="70%" r="55%">
+      <stop offset="0%" stop-color="#0A0000" stop-opacity="0.75"/>
+      <stop offset="55%" stop-color="#0A0000" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+    <radialGradient id="critSpecular" cx="33%" cy="27%" r="28%">
+      <stop offset="0%" stop-color="#FECACA" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+    <radialGradient id="critGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="75%" stop-color="transparent"/>
+      <stop offset="90%" stop-color="#DC2626" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#EF4444" stop-opacity="0.05"/>
+    </radialGradient>
+    <linearGradient id="critBand" x1="0%" y1="0%" x2="100%" y2="20%">
+      <stop offset="0%" stop-color="#B91C1C" stop-opacity="0"/>
+      <stop offset="40%" stop-color="#EF4444" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#991B1B" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="critClip">
+      <circle cx="150" cy="150" r="108"/>
+    </clipPath>
+    <filter id="critBlur">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+  </defs>
+
+  <!-- Outer glow -->
+  <circle cx="150" cy="150" r="135" fill="url(#critGlow)" filter="url(#critBlur)"/>
+
+  <!-- Planet body -->
+  <circle cx="150" cy="150" r="108" fill="url(#critBody)"/>
+
+  <!-- Surface bands -->
+  <g clip-path="url(#critClip)">
+    <ellipse cx="150" cy="128" rx="108" ry="16" fill="url(#critBand)" transform="rotate(-7 150 128)" opacity="0.9"/>
+    <ellipse cx="150" cy="155" rx="108" ry="13" fill="url(#critBand)" transform="rotate(-5 150 155)" opacity="0.7"/>
+    <ellipse cx="150" cy="178" rx="108" ry="14" fill="url(#critBand)" transform="rotate(-9 150 178)" opacity="0.6"/>
+    <!-- Magma-like surface veins -->
+    <ellipse cx="130" cy="140" rx="55" ry="6" fill="#FF6B6B" opacity="0.08"/>
+    <ellipse cx="170" cy="165" rx="60" ry="5" fill="#DC2626" opacity="0.07"/>
+  </g>
+
+  <!-- Shadow terminator -->
+  <circle cx="150" cy="150" r="108" fill="url(#critShadow)"/>
+
+  <!-- Atmospheric rim -->
+  <circle cx="150" cy="150" r="108" fill="url(#critRim)"/>
+
+  <!-- Specular -->
+  <circle cx="150" cy="150" r="108" fill="url(#critSpecular)"/>
+
+  <!-- Atmospheric ring -->
+  <circle cx="150" cy="150" r="111" fill="none" stroke="#EF4444" stroke-width="2.5" opacity="0.25"/>
+  <circle cx="150" cy="150" r="114" fill="none" stroke="#DC2626" stroke-width="1.5" opacity="0.1"/>
+</svg>

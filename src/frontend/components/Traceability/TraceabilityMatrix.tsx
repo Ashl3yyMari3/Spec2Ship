@@ -65,20 +65,19 @@ function criticalityLabel(c: Criticality): string {
 }
 
 function CoverageBadge({ status }: { status: CoverageStatus }): React.ReactElement {
-  const styles: Record<CoverageStatus, React.CSSProperties> = {
-    full: { background: '#f0fdf4', color: '#166534', border: '1px solid #86efac' },
-    partial: { background: '#fff7ed', color: '#9a3412', border: '1px solid #fdba74' },
-    none: { background: '#f8fafc', color: '#475569', border: '1px solid #cbd5e1' },
+  const classMap: Record<CoverageStatus, string> = {
+    full:    'badge coverage-badge-full',
+    partial: 'badge coverage-badge-partial',
+    none:    'badge coverage-badge-none',
   };
   const labels: Record<CoverageStatus, string> = {
-    full: 'Full',
+    full:    'Full',
     partial: 'Partial',
-    none: 'No Coverage',
+    none:    'No Coverage',
   };
   return (
     <span
-      className="badge"
-      style={styles[status]}
+      className={classMap[status]}
       aria-label={`Coverage: ${labels[status]}`}
     >
       {labels[status]}
@@ -102,21 +101,6 @@ function FilterBar({ filters, onChange }: FilterBarProps): React.ReactElement {
     filters.coverage !== 'all' ||
     filters.changed !== 'all';
 
-  const inputStyle: React.CSSProperties = {
-    fontSize: '13px',
-    padding: '5px 10px',
-    border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius)',
-    background: 'var(--color-bg)',
-    color: 'var(--color-text)',
-    height: '32px',
-  };
-
-  const selectStyle: React.CSSProperties = {
-    ...inputStyle,
-    cursor: 'pointer',
-  };
-
   return (
     <div
       style={{
@@ -125,10 +109,13 @@ function FilterBar({ filters, onChange }: FilterBarProps): React.ReactElement {
         gap: '8px',
         alignItems: 'center',
         marginBottom: '16px',
-        padding: '12px 16px',
-        background: 'var(--color-surface)',
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius)',
+        padding: '14px 18px',
+        background: 'var(--bg-glass)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: '1px solid var(--border-glass)',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--shadow-card)',
       }}
     >
       <input
@@ -137,14 +124,13 @@ function FilterBar({ filters, onChange }: FilterBarProps): React.ReactElement {
         value={filters.search}
         onChange={(e) => onChange({ ...filters, search: e.target.value })}
         aria-label="Search requirements"
-        style={{ ...inputStyle, minWidth: '200px', flex: '1 1 200px' }}
+        style={{ minWidth: '200px', flex: '1 1 200px' }}
       />
 
       <select
         value={filters.criticality}
         onChange={(e) => onChange({ ...filters, criticality: e.target.value as CriticalityFilter })}
         aria-label="Filter by criticality"
-        style={selectStyle}
       >
         <option value="all">All Criticalities</option>
         <option value="critical">Critical</option>
@@ -157,7 +143,6 @@ function FilterBar({ filters, onChange }: FilterBarProps): React.ReactElement {
         value={filters.coverage}
         onChange={(e) => onChange({ ...filters, coverage: e.target.value as CoverageFilter })}
         aria-label="Filter by coverage"
-        style={selectStyle}
       >
         <option value="all">All Coverage</option>
         <option value="full">Full</option>
@@ -169,7 +154,6 @@ function FilterBar({ filters, onChange }: FilterBarProps): React.ReactElement {
         value={filters.changed}
         onChange={(e) => onChange({ ...filters, changed: e.target.value as ChangedFilter })}
         aria-label="Filter by changed status"
-        style={selectStyle}
       >
         <option value="all">All Changed Status</option>
         <option value="changed">Changed</option>
@@ -180,17 +164,7 @@ function FilterBar({ filters, onChange }: FilterBarProps): React.ReactElement {
         <button
           onClick={() => onChange(DEFAULT_FILTERS)}
           aria-label="Reset all filters"
-          style={{
-            fontSize: '12px',
-            padding: '5px 12px',
-            height: '32px',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius)',
-            background: 'var(--color-bg)',
-            color: 'var(--color-muted)',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
+          className="btn"
         >
           Reset Filters
         </button>
@@ -232,8 +206,8 @@ function GridCell({ reqId, tcId, coverage }: GridCellProps): React.ReactElement 
     label = 'Full';
     ariaLabel = `${reqId} covered by ${tcId}`;
     cellStyle = {
-      background: '#f0fdf4',
-      color: '#166534',
+      background: 'rgba(16, 185, 129, 0.12)',
+      color: 'var(--low-text)',
       fontWeight: 700,
     };
   } else if (coverage === 'partial') {
@@ -241,8 +215,8 @@ function GridCell({ reqId, tcId, coverage }: GridCellProps): React.ReactElement 
     label = 'Partial';
     ariaLabel = `${reqId} partially covered by ${tcId}`;
     cellStyle = {
-      background: '#fff7ed',
-      color: '#9a3412',
+      background: 'rgba(249, 115, 22, 0.12)',
+      color: 'var(--high-text)',
       fontWeight: 700,
     };
   } else {
@@ -251,7 +225,7 @@ function GridCell({ reqId, tcId, coverage }: GridCellProps): React.ReactElement 
     ariaLabel = `${reqId} not covered by ${tcId}`;
     cellStyle = {
       background: 'transparent',
-      color: 'var(--color-muted)',
+      color: 'var(--text-muted)',
     };
   }
 
@@ -261,8 +235,8 @@ function GridCell({ reqId, tcId, coverage }: GridCellProps): React.ReactElement 
       style={{
         padding: '8px 6px',
         textAlign: 'center',
-        borderBottom: '1px solid var(--color-border)',
-        borderRight: '1px solid var(--color-border)',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        borderRight: '1px solid rgba(255,255,255,0.04)',
         whiteSpace: 'nowrap',
         ...cellStyle,
       }}
@@ -326,7 +300,7 @@ function RequirementTestGrid({
       <p
         className="state-message"
         role="status"
-        style={{ fontSize: '13px', color: 'var(--color-muted)', fontStyle: 'italic' }}
+        style={{ fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic' }}
       >
         No test cases are linked to the visible requirements.
       </p>
@@ -334,18 +308,18 @@ function RequirementTestGrid({
   }
 
   const gridSectionHeadingStyle: React.CSSProperties = {
-    fontSize: '11px',
-    fontWeight: 600,
+    fontSize: '10px',
+    fontWeight: 700,
     textTransform: 'uppercase',
-    letterSpacing: '0.06em',
-    color: 'var(--color-muted)',
+    letterSpacing: '0.07em',
+    color: 'var(--text-muted)',
     margin: '0 0 8px 0',
   };
 
   const legendItems: { symbol: string; label: string; style: React.CSSProperties }[] = [
-    { symbol: '✓', label: 'Full coverage', style: { color: '#166534', fontWeight: 700 } },
-    { symbol: '◐', label: 'Partial coverage', style: { color: '#9a3412', fontWeight: 700 } },
-    { symbol: '—', label: 'No coverage', style: { color: 'var(--color-muted)' } },
+    { symbol: '✓', label: 'Full coverage',    style: { color: 'var(--low-text)', fontWeight: 700 } },
+    { symbol: '◐', label: 'Partial coverage', style: { color: 'var(--high-text)', fontWeight: 700 } },
+    { symbol: '—', label: 'No coverage',      style: { color: 'var(--text-muted)' } },
   ];
 
   return (
@@ -355,8 +329,8 @@ function RequirementTestGrid({
         style={{
           fontSize: '14px',
           fontWeight: 700,
-          color: 'var(--color-text)',
-          marginBottom: '6px',
+          color: 'var(--text-primary)',
+          marginBottom: '8px',
         }}
       >
         Requirement × Test-Case Coverage Grid
@@ -375,7 +349,7 @@ function RequirementTestGrid({
         {legendItems.map(({ symbol, label, style }) => (
           <span
             key={label}
-            style={{ fontSize: '12px', color: 'var(--color-muted)', display: 'flex', gap: '4px', alignItems: 'center' }}
+            style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', gap: '4px', alignItems: 'center' }}
           >
             <span style={{ fontSize: '14px', ...style }} aria-hidden="true">{symbol}</span>
             {label}
@@ -387,39 +361,42 @@ function RequirementTestGrid({
       <div
         style={{
           overflowX: 'auto',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius)',
-          boxShadow: 'var(--shadow-sm)',
+          background: 'var(--bg-glass)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          border: '1px solid var(--border-glass)',
+          borderRadius: 'var(--radius-md)',
+          boxShadow: 'var(--shadow-card)',
         }}
       >
         <table
           style={{
             borderCollapse: 'collapse',
             fontSize: '12px',
-            background: 'var(--color-bg)',
+            background: 'transparent',
             tableLayout: 'auto',
           }}
           aria-label="Requirement by test-case coverage grid"
         >
           <thead>
-            <tr style={{ background: 'var(--color-surface)', borderBottom: '2px solid var(--color-border)' }}>
+            <tr style={{ borderBottom: '1px solid var(--border-glass-bright)' }}>
               {/* Top-left corner cell */}
               <th
                 scope="col"
                 style={{
-                  padding: '8px 12px',
+                  padding: '10px 14px',
                   textAlign: 'left',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   fontSize: '10px',
                   textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  color: 'var(--color-muted)',
+                  letterSpacing: '0.07em',
+                  color: 'var(--text-muted)',
                   whiteSpace: 'nowrap',
-                  borderRight: '2px solid var(--color-border)',
+                  borderRight: '1px solid var(--border-glass-bright)',
                   minWidth: '140px',
                   position: 'sticky',
                   left: 0,
-                  background: 'var(--color-surface)',
+                  background: 'var(--bg-surface)',
                   zIndex: 1,
                 }}
               >
@@ -433,11 +410,11 @@ function RequirementTestGrid({
                   style={{
                     padding: '8px 6px',
                     textAlign: 'center',
-                    fontWeight: 600,
+                    fontWeight: 700,
                     fontSize: '10px',
-                    color: 'var(--color-muted)',
+                    color: 'var(--text-muted)',
                     whiteSpace: 'nowrap',
-                    borderRight: '1px solid var(--color-border)',
+                    borderRight: '1px solid rgba(255,255,255,0.04)',
                     maxWidth: '90px',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -457,25 +434,25 @@ function RequirementTestGrid({
               <tr
                 key={req.id}
                 style={{
-                  background: idx % 2 === 0 ? 'var(--color-bg)' : 'var(--color-surface)',
+                  background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
                 }}
               >
                 {/* Row header — sticky so requirement ID stays visible while scrolling */}
                 <th
                   scope="row"
                   style={{
-                    padding: '8px 12px',
+                    padding: '8px 14px',
                     textAlign: 'left',
                     fontFamily: 'monospace',
                     fontSize: '11px',
-                    fontWeight: 600,
-                    color: 'var(--color-accent)',
+                    fontWeight: 700,
+                    color: 'var(--violet-light)',
                     whiteSpace: 'nowrap',
-                    borderRight: '2px solid var(--color-border)',
-                    borderBottom: '1px solid var(--color-border)',
+                    borderRight: '1px solid var(--border-glass-bright)',
+                    borderBottom: '1px solid rgba(255,255,255,0.04)',
                     position: 'sticky',
                     left: 0,
-                    background: idx % 2 === 0 ? 'var(--color-bg)' : 'var(--color-surface)',
+                    background: idx % 2 === 0 ? 'var(--bg-surface)' : 'rgba(17,22,47,0.95)',
                     zIndex: 1,
                   }}
                 >
@@ -496,7 +473,7 @@ function RequirementTestGrid({
       </div>
 
       {/* Column count note */}
-      <p style={{ ...gridSectionHeadingStyle, marginTop: '6px' }} aria-live="polite">
+      <p style={{ ...gridSectionHeadingStyle, marginTop: '8px' }} aria-live="polite">
         {requirements.length} requirement{requirements.length !== 1 ? 's' : ''} ×{' '}
         {columns.length} test case{columns.length !== 1 ? 's' : ''}
       </p>
@@ -555,38 +532,40 @@ export default function TraceabilityMatrix({
       ) : (
         <>
           {/* Requirements summary table */}
-          <div style={{ overflowX: 'auto' }}>
+          <div
+            style={{
+              overflowX: 'auto',
+              background: 'var(--bg-glass)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid var(--border-glass)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-card)',
+            }}
+          >
             <table
               style={{
                 width: '100%',
                 borderCollapse: 'collapse',
                 fontSize: '13.5px',
-                background: 'var(--color-bg)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius)',
-                boxShadow: 'var(--shadow-sm)',
+                background: 'transparent',
               }}
               aria-label="Requirements summary table"
             >
               <thead>
-                <tr
-                  style={{
-                    background: 'var(--color-surface)',
-                    borderBottom: '2px solid var(--color-border)',
-                  }}
-                >
+                <tr style={{ borderBottom: '1px solid var(--border-glass-bright)' }}>
                   {['ID', 'Title', 'Criticality', 'Coverage', 'Tests', 'Changed'].map((col) => (
                     <th
                       key={col}
                       scope="col"
                       style={{
-                        padding: '10px 14px',
+                        padding: '12px 14px',
                         textAlign: 'left',
-                        fontWeight: 600,
-                        fontSize: '11px',
+                        fontWeight: 700,
+                        fontSize: '10px',
                         textTransform: 'uppercase',
-                        letterSpacing: '0.06em',
-                        color: 'var(--color-muted)',
+                        letterSpacing: '0.07em',
+                        color: 'var(--text-muted)',
                         whiteSpace: 'nowrap',
                       }}
                     >
@@ -618,14 +597,14 @@ export default function TraceabilityMatrix({
                       style={{
                         cursor: 'pointer',
                         background: isSelected
-                          ? '#eff6ff'
+                          ? 'rgba(139, 92, 246, 0.15)'
                           : isEven
-                          ? 'var(--color-bg)'
-                          : 'var(--color-surface)',
-                        borderBottom: '1px solid var(--color-border)',
-                        outline: isSelected ? '2px solid var(--color-accent)' : undefined,
+                          ? 'transparent'
+                          : 'rgba(255,255,255,0.02)',
+                        borderBottom: '1px solid rgba(255,255,255,0.04)',
+                        outline: isSelected ? '2px solid var(--violet)' : undefined,
                         outlineOffset: '-2px',
-                        transition: 'background 0.1s',
+                        transition: 'background 0.12s',
                       }}
                     >
                       <td
@@ -633,8 +612,8 @@ export default function TraceabilityMatrix({
                           padding: '10px 14px',
                           fontFamily: 'monospace',
                           fontSize: '12px',
-                          color: 'var(--color-accent)',
-                          fontWeight: 600,
+                          color: 'var(--violet-light)',
+                          fontWeight: 700,
                           whiteSpace: 'nowrap',
                         }}
                       >
@@ -644,7 +623,7 @@ export default function TraceabilityMatrix({
                         style={{
                           padding: '10px 14px',
                           fontWeight: isSelected ? 600 : 400,
-                          color: 'var(--color-text)',
+                          color: 'var(--text-primary)',
                           maxWidth: '300px',
                         }}
                       >
@@ -662,7 +641,7 @@ export default function TraceabilityMatrix({
                         style={{
                           padding: '10px 14px',
                           textAlign: 'center',
-                          color: testCount === 0 ? 'var(--color-muted)' : 'var(--color-text)',
+                          color: testCount === 0 ? 'var(--text-muted)' : 'var(--text-primary)',
                           fontWeight: 500,
                         }}
                       >
@@ -672,7 +651,7 @@ export default function TraceabilityMatrix({
                         {req.changed ? (
                           <span className="badge badge--high">Changed</span>
                         ) : (
-                          <span style={{ color: 'var(--color-muted)', fontSize: '12px' }}>—</span>
+                          <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>—</span>
                         )}
                       </td>
                     </tr>

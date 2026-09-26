@@ -52,9 +52,9 @@ export default function ImpactPage(): React.ReactElement {
       <div className="card" style={{ marginBottom: 24 }}>
         <label
           htmlFor="impact-req-select"
-          style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8, color: 'var(--color-text)' }}
+          style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8, color: 'var(--text-secondary)' }}
         >
-          Requirement
+          Select Requirement
         </label>
 
         {reqLoading && (
@@ -75,17 +75,7 @@ export default function ImpactPage(): React.ReactElement {
             id="impact-req-select"
             value={selectedId}
             onChange={handleSelectChange}
-            style={{
-              width: '100%',
-              maxWidth: 480,
-              padding: '8px 12px',
-              fontSize: 13,
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius)',
-              background: 'var(--color-bg)',
-              color: 'var(--color-text)',
-              cursor: 'pointer',
-            }}
+            style={{ width: '100%', maxWidth: 520 }}
             aria-label="Select a requirement to analyze"
           >
             <option value="">— Select a requirement —</option>
@@ -101,10 +91,10 @@ export default function ImpactPage(): React.ReactElement {
       {/* Impact results */}
       {!selectedId && !reqLoading && (
         <div className="card" style={{ textAlign: 'center', padding: '40px 32px' }}>
-          <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-muted)', marginBottom: 4 }}>
+          <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>
             Select a requirement to analyze its change impact.
           </p>
-          <p style={{ fontSize: 13, color: 'var(--color-muted)' }}>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
             The analysis shows directly impacted tests and transitively impacted requirements.
           </p>
         </div>

@@ -42,31 +42,32 @@ interface MetricCardProps {
 }
 
 function MetricCard({ label, value, variant = 'default' }: MetricCardProps): React.ReactElement {
-  const variantStyles: Record<string, React.CSSProperties> = {
-    default: { borderTopColor: 'var(--color-accent)' },
-    success: { borderTopColor: '#22c55e' },
-    warning: { borderTopColor: 'var(--color-high-border)' },
-    danger: { borderTopColor: 'var(--color-critical-border)' },
+  const variantMap: Record<string, { border: string; shadow: string; color: string }> = {
+    default: { border: 'var(--border-glass)',        shadow: 'var(--shadow-violet)',   color: 'var(--violet-light)' },
+    success: { border: 'var(--low-border)',           shadow: 'var(--shadow-low)',      color: 'var(--low-text)' },
+    warning: { border: 'var(--high-border)',          shadow: 'var(--shadow-high)',     color: 'var(--high-text)' },
+    danger:  { border: 'var(--critical-border)',      shadow: 'var(--shadow-critical)', color: 'var(--critical-text)' },
   };
+  const v = variantMap[variant];
 
   return (
     <div
       style={{
-        background: 'var(--color-bg)',
-        border: '1px solid var(--color-border)',
-        borderTop: '3px solid',
-        borderRadius: 'var(--radius)',
-        padding: '16px 20px',
-        flex: '1 1 160px',
+        background: 'var(--bg-glass)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: `1px solid ${v.border}`,
+        borderRadius: 'var(--radius-xl)',
+        padding: '18px 22px',
+        flex: '1 1 150px',
         minWidth: 0,
-        boxShadow: 'var(--shadow-sm)',
-        ...variantStyles[variant],
+        boxShadow: `var(--shadow-card), ${v.shadow}`,
       }}
     >
-      <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.2 }}>
+      <div style={{ fontSize: '36px', fontWeight: 800, color: v.color, lineHeight: 1.1 }}>
         {value}
       </div>
-      <div style={{ fontSize: '12px', color: 'var(--color-muted)', marginTop: '4px', fontWeight: 500 }}>
+      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '5px', fontWeight: 500 }}>
         {label}
       </div>
     </div>

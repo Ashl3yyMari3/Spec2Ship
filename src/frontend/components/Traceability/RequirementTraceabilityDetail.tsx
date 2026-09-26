@@ -19,17 +19,17 @@ function criticalityLabel(c: Criticality): string {
 
 const fieldLabelStyle: React.CSSProperties = {
   fontSize: '10px',
-  fontWeight: 600,
+  fontWeight: 700,
   textTransform: 'uppercase',
-  letterSpacing: '0.06em',
-  color: 'var(--color-muted)',
-  marginBottom: '2px',
+  letterSpacing: '0.07em',
+  color: 'var(--text-muted)',
+  marginBottom: '4px',
 };
 
 const fieldValueStyle: React.CSSProperties = {
   fontSize: '13.5px',
-  color: 'var(--color-text)',
-  lineHeight: 1.55,
+  color: 'var(--text-secondary)',
+  lineHeight: 1.6,
 };
 
 export default function RequirementTraceabilityDetail({
@@ -41,11 +41,14 @@ export default function RequirementTraceabilityDetail({
     <section
       aria-label={`Traceability detail for ${req.id}`}
       style={{
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius)',
-        background: 'var(--color-bg)',
-        boxShadow: 'var(--shadow-sm)',
+        background: 'var(--bg-glass)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        border: '1px solid var(--border-glass-bright)',
+        borderRadius: 'var(--radius-xl)',
+        boxShadow: 'var(--shadow-card), var(--shadow-violet)',
         marginTop: '20px',
+        overflow: 'hidden',
       }}
     >
       {/* Detail header */}
@@ -54,10 +57,9 @@ export default function RequirementTraceabilityDetail({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '14px 20px',
-          borderBottom: '1px solid var(--color-border)',
-          background: 'var(--color-surface)',
-          borderRadius: 'var(--radius) var(--radius) 0 0',
+          padding: '16px 22px',
+          borderBottom: '1px solid var(--border-glass)',
+          background: 'rgba(139, 92, 246, 0.07)',
           gap: '12px',
           flexWrap: 'wrap',
         }}
@@ -65,13 +67,17 @@ export default function RequirementTraceabilityDetail({
         <div>
           <span
             style={{
-              fontFamily: 'monospace',
-              fontSize: '12px',
-              fontWeight: 600,
-              color: 'var(--color-accent)',
-              letterSpacing: '0.05em',
-              display: 'block',
-              marginBottom: '2px',
+              fontFamily: "'SF Mono', 'Fira Code', monospace",
+              fontSize: '11px',
+              fontWeight: 700,
+              color: 'var(--violet-light)',
+              background: 'rgba(139,92,246,0.14)',
+              border: '1px solid rgba(139,92,246,0.28)',
+              borderRadius: 8,
+              padding: '2px 8px',
+              letterSpacing: '0.06em',
+              display: 'inline-block',
+              marginBottom: '6px',
             }}
           >
             {req.id}
@@ -80,7 +86,7 @@ export default function RequirementTraceabilityDetail({
             style={{
               fontSize: '16px',
               fontWeight: 700,
-              color: 'var(--color-text)',
+              color: 'var(--text-primary)',
               margin: 0,
               lineHeight: 1.3,
             }}
@@ -91,23 +97,15 @@ export default function RequirementTraceabilityDetail({
         <button
           onClick={onClose}
           aria-label={`Close detail panel for ${req.id}`}
-          style={{
-            fontSize: '13px',
-            padding: '5px 14px',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius)',
-            background: 'var(--color-bg)',
-            color: 'var(--color-muted)',
-            cursor: 'pointer',
-            flexShrink: 0,
-          }}
+          className="btn"
+          style={{ flexShrink: 0 }}
         >
           Close
         </button>
       </div>
 
       {/* Detail body */}
-      <div style={{ padding: '20px' }}>
+      <div style={{ padding: '20px 22px' }}>
         {/* Requirement meta */}
         <div
           style={{
@@ -116,9 +114,9 @@ export default function RequirementTraceabilityDetail({
             gap: '14px',
             marginBottom: '20px',
             padding: '16px',
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius)',
+            background: 'rgba(139, 92, 246, 0.05)',
+            border: '1px solid var(--border-glass)',
+            borderRadius: 'var(--radius-md)',
           }}
         >
           <div>
@@ -139,7 +137,7 @@ export default function RequirementTraceabilityDetail({
               {req.changed ? (
                 <span className="badge badge--high">Changed</span>
               ) : (
-                <span style={{ fontSize: '13px', color: 'var(--color-muted)' }}>Unchanged</span>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Unchanged</span>
               )}
             </dd>
           </div>
@@ -149,7 +147,7 @@ export default function RequirementTraceabilityDetail({
               style={{
                 fontSize: '12px',
                 fontFamily: 'monospace',
-                color: 'var(--color-muted)',
+                color: 'var(--text-muted)',
                 wordBreak: 'break-all',
               }}
             >
@@ -173,8 +171,8 @@ export default function RequirementTraceabilityDetail({
         {/* Description */}
         {req.description && (
           <div style={{ marginBottom: '20px' }}>
-            <p style={{ ...fieldLabelStyle, fontSize: '11px' }}>Description</p>
-            <p style={{ fontSize: '13.5px', color: 'var(--color-muted)', lineHeight: 1.6 }}>
+            <p style={fieldLabelStyle}>Description</p>
+            <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
               {req.description}
             </p>
           </div>
@@ -185,9 +183,9 @@ export default function RequirementTraceabilityDetail({
           style={{
             marginBottom: '20px',
             padding: '16px',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius)',
-            background: 'var(--color-surface)',
+            border: '1px solid var(--border-glass)',
+            borderRadius: 'var(--radius-md)',
+            background: 'rgba(139, 92, 246, 0.05)',
           }}
         >
           <AcceptanceCriteriaCoverage
@@ -200,9 +198,9 @@ export default function RequirementTraceabilityDetail({
         <div
           style={{
             padding: '16px',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius)',
-            background: 'var(--color-surface)',
+            border: '1px solid var(--border-glass)',
+            borderRadius: 'var(--radius-md)',
+            background: 'rgba(139, 92, 246, 0.05)',
           }}
         >
           <LinkedTests requirementId={req.id} matrix={matrix} />

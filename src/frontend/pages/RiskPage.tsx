@@ -34,11 +34,11 @@ export default function RiskPage(): React.ReactElement {
 
       {!loading && !error && scores !== null && requirements !== null && (
         scores.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: '40px 32px' }}>
-            <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-muted)' }}>
-              No risk data available.
-            </p>
-          </div>
+        <div className="card" style={{ textAlign: 'center', padding: '40px 32px' }}>
+          <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-muted)' }}>
+            No risk data available.
+          </p>
+        </div>
         ) : (
           <RiskDashboard scores={scores} requirements={requirements} />
         )

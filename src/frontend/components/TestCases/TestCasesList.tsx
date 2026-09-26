@@ -7,8 +7,8 @@ interface Props {
 
 function statusClass(s: TestStatus): string {
   const map: Record<TestStatus, string> = {
-    pass: 'badge--pass',
-    fail: 'badge--fail',
+    pass:    'badge--pass',
+    fail:    'badge--fail',
     not_run: 'badge--not-run',
     blocked: 'badge--blocked',
   };
@@ -17,8 +17,8 @@ function statusClass(s: TestStatus): string {
 
 function statusLabel(s: TestStatus): string {
   const map: Record<TestStatus, string> = {
-    pass: 'Pass',
-    fail: 'Fail',
+    pass:    'Pass',
+    fail:    'Fail',
     not_run: 'Not Run',
     blocked: 'Blocked',
   };
@@ -51,7 +51,24 @@ export default function TestCasesList({ tests }: Props): React.ReactElement {
     <section aria-label="Test cases list">
       {tests.map((tc) => (
         <article key={tc.id} className="card" aria-labelledby={`tc-title-${tc.id}`}>
-          <p className="card__id">{tc.id}</p>
+          {/* ID pill */}
+          <p
+            style={{
+              display: 'inline-block',
+              fontFamily: "'SF Mono', 'Fira Code', monospace",
+              fontSize: 11,
+              fontWeight: 700,
+              color: 'var(--violet-light)',
+              background: 'rgba(139,92,246,0.12)',
+              border: '1px solid rgba(139,92,246,0.25)',
+              borderRadius: 8,
+              padding: '2px 8px',
+              marginBottom: 6,
+              letterSpacing: '0.06em',
+            }}
+          >
+            {tc.id}
+          </p>
 
           <h2 className="card__title" id={`tc-title-${tc.id}`}>
             {tc.title}
@@ -70,31 +87,31 @@ export default function TestCasesList({ tests }: Props): React.ReactElement {
               {tc.type.charAt(0).toUpperCase() + tc.type.slice(1)}
             </span>
             <span className="badge badge--type">
-              Automated: {tc.automated ? 'Yes' : 'No'}
+              {tc.automated ? 'Automated' : 'Manual'}
             </span>
           </div>
 
-          <dl style={{ fontSize: '13px', display: 'grid', gap: '6px' }}>
+          <dl style={{ fontSize: '13px', display: 'grid', gap: '8px' }}>
             {tc.requirementIds.length > 0 && (
               <div>
                 <dt
                   style={{
-                    fontWeight: 600,
-                    fontSize: '11px',
+                    fontWeight: 700,
+                    fontSize: '10px',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'var(--color-muted)',
-                    marginBottom: '4px',
+                    letterSpacing: '0.07em',
+                    color: 'var(--text-muted)',
+                    marginBottom: '6px',
                   }}
                 >
                   Linked Requirements
                 </dt>
-                <dd>
+                <dd style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {tc.requirementIds.map((id) => (
                     <span
                       key={id}
                       className="badge badge--type"
-                      style={{ marginRight: '6px', fontFamily: 'monospace' }}
+                      style={{ fontFamily: 'monospace', color: 'var(--violet-light)' }}
                     >
                       {id}
                     </span>
@@ -104,25 +121,25 @@ export default function TestCasesList({ tests }: Props): React.ReactElement {
             )}
 
             {tc.acceptanceCriteriaRefs.length > 0 && (
-              <div style={{ marginTop: '4px' }}>
+              <div>
                 <dt
                   style={{
-                    fontWeight: 600,
-                    fontSize: '11px',
+                    fontWeight: 700,
+                    fontSize: '10px',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'var(--color-muted)',
-                    marginBottom: '4px',
+                    letterSpacing: '0.07em',
+                    color: 'var(--text-muted)',
+                    marginBottom: '6px',
                   }}
                 >
                   Acceptance Criteria References
                 </dt>
-                <dd>
+                <dd style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {tc.acceptanceCriteriaRefs.map((ref, i) => (
                     <span
                       key={i}
                       className="badge badge--type"
-                      style={{ marginRight: '6px', fontFamily: 'monospace' }}
+                      style={{ fontFamily: 'monospace' }}
                     >
                       {formatAcRef(ref)}
                     </span>
@@ -132,20 +149,20 @@ export default function TestCasesList({ tests }: Props): React.ReactElement {
             )}
 
             {tc.notes && (
-              <div style={{ marginTop: '4px' }}>
+              <div>
                 <dt
                   style={{
-                    fontWeight: 600,
-                    fontSize: '11px',
+                    fontWeight: 700,
+                    fontSize: '10px',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'var(--color-muted)',
-                    marginBottom: '2px',
+                    letterSpacing: '0.07em',
+                    color: 'var(--text-muted)',
+                    marginBottom: '4px',
                   }}
                 >
                   Notes
                 </dt>
-                <dd style={{ color: 'var(--color-muted)', fontSize: '13px' }}>
+                <dd style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.6 }}>
                   {tc.notes}
                 </dd>
               </div>
