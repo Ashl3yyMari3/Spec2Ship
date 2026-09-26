@@ -2,6 +2,10 @@
 
 **Requirements → Tests → Release Confidence**
 
+## Live Demo
+
+🚀 **[Launch Spec2Ship](https://spec2ship.onrender.com)**
+
 Spec2Ship is an AI-assisted QA traceability and release-readiness system built for the **IBM Bob 2.0 Hackathon**. It brings requirements, test evidence, coverage analysis, change impact, risk scoring, and release decisions into one workflow so a QA team can see not only *what* is tested, but *whether the product is ready to ship*.
 
 ![Spec2Ship Risk Dashboard](./screenshots/spec2ship-risk-dashboard.png)
