@@ -1,32 +1,49 @@
 # IBM Bob Session Evidence
 
-This folder stores screenshots of relevant IBM Bob task session consumption summaries used during development of Spec2Ship.
+This folder contains IBM Bob IDE task histories and session-summary screenshots captured during development of **Spec2Ship** for the IBM Bob 2.0 Hackathon.
 
-Each screenshot should be captured after completing a meaningful Bob task.
+The evidence is kept in the repository so reviewers can trace how Bob contributed across planning, implementation, integration, and final validation.
 
-## Naming Convention
+## Evidence by Task
 
-Use:
+| Task | Evidence in this folder |
+| --- | --- |
+| Task 1 | Architecture and project-planning history plus session-summary screenshots |
+| Task 2 | Project scaffold history plus session-summary screenshots |
+| Task 3 | Backend services and API history plus session-summary screenshots |
+| Task 4 | Frontend requirements/test workflow history plus session-summary screenshots |
+| Task 5 | Traceability-matrix evidence, including implementation and correction histories/screenshots |
+| Task 6 | Coverage, change-impact, and risk evidence |
+| Task 7 | Release-readiness evidence |
+| Task 8 | Final end-to-end testing history plus eight session-summary screenshots |
 
-ashley_task##_short_description_summary.png
+## Naming
 
-Examples:
+Ashley evidence generally follows:
 
-- ashley_task01_project_architecture_summary.png
-- ashley_task02_requirements_analysis_summary.png
-- ashley_task03_test_generation_summary.png
-- ashley_task04_coverage_analysis_summary.png
+`ashley_task##_short_description_history.md`
 
-## Evidence Workflow
+and:
 
-After completing a relevant IBM Bob task:
+`ashley_task##_short_description_summary_##.png`
 
-1. Open Tasks in IBM Bob IDE.
-2. Select the completed task.
-3. Confirm the task belongs to the Spec2Ship workspace.
-4. Open the task/session consumption summary.
-5. Capture a readable PNG screenshot.
-6. Save the screenshot in this folder.
-7. Commit the screenshot with the related project changes.
+Additional teammate evidence is preserved with the contributor/task naming used when it was captured.
 
-Do not delete relevant session evidence before final hackathon submission.
+## What the Evidence Shows
+
+The stored histories and screenshots document Bob-assisted work across:
+
+- architecture and task planning
+- TypeScript/React project scaffolding
+- Express backend services and API endpoints
+- requirements and test-case workflows
+- traceability
+- coverage-gap analysis
+- change-impact analysis
+- risk scoring
+- release-readiness reporting
+- final Playwright end-to-end validation
+
+## Submission Note
+
+Do not delete the Bob histories or session-summary screenshots before hackathon judging is complete. They are retained as project evidence showing IBM Bob IDE as a core development component.
