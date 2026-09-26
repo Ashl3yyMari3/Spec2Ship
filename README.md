@@ -4,6 +4,10 @@
 
 Spec2Ship is an AI-assisted QA traceability and release-readiness system built for the **IBM Bob 2.0 Hackathon**. It brings requirements, test evidence, coverage analysis, change impact, risk scoring, and release decisions into one workflow so a QA team can see not only *what* is tested, but *whether the product is ready to ship*.
 
+![Spec2Ship Risk Dashboard](./screenshots/spec2ship-risk-dashboard.png)
+
+*Risk Dashboard: explainable requirement-level risk with cosmic KPI cards and weighted factor analysis.*
+
 ## What Spec2Ship Does
 
 Spec2Ship follows a complete QA decision pipeline:
@@ -65,6 +69,10 @@ The final report combines coverage, test execution, requirement criticality, cov
 **Review Required** is produced when no blocking condition exists but human review is still warranted, including 70–89% coverage, gaps on medium/high requirements, incomplete tests, or changed requirements.
 
 **Ready** is produced when readiness conditions are satisfied, including at least 90% coverage and the required critical-path evidence.
+
+![Spec2Ship Release Readiness Report](./screenshots/spec2ship-release-readiness.png)
+
+*Release Readiness: evidence-based shipping verdict, coverage summary, execution status, and per-requirement details.*
 
 ## Architecture
 
