@@ -5,9 +5,11 @@
  */
 import { createApp } from './server.js';
 
-const PORT = 3001;
+const PORT = Number(process.env.PORT) || 3001;
+const HOST = '0.0.0.0';
+
 const app = createApp();
 
-app.listen(PORT, () => {
-  console.log(`[spec2ship] Backend running on http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`[spec2ship] Server running on port ${PORT}`);
 });

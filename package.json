@@ -8,6 +8,7 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:frontend": "vite",
     "dev:backend": "tsx watch src/backend/index.ts",
+    "start": "NODE_ENV=production node dist/backend/index.js",
     "build": "tsc -p tsconfig.node.json && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
