@@ -1,56 +1,59 @@
-import React from 'react';
+import React, { useCallback } from 'react';
+import type { ReleaseReadinessReport } from '@backend/types/models';
+import { useApi } from '../hooks/useApi';
+import ReleaseReport from '../components/Report/ReleaseReport';
 
 export default function ReportPage(): React.ReactElement {
+  const { data: report, loading, error } = useApi<ReleaseReadinessReport>('/api/release-readiness');
+
+  const handleDownloadJson = useCallback(() => {
+    if (!report) return;
+    const json = JSON.stringify(report, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'spec2ship-release-readiness.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [report]);
+
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
   return (
     <>
       <div className="page-header">
         <h1 className="page-header__title">Release Readiness Report</h1>
         <p className="page-header__subtitle">
-          Consolidated release gate assessment across all requirements
+          Summarizes current requirement coverage, test execution, risk assessment, and release
+          evidence for the current build.
         </p>
       </div>
-      <div className="placeholder">
-        <div
-          style={{
-            width: 64,
-            height: 64,
-            margin: '0 auto 20px',
-            borderRadius: '50%',
-            background: 'rgba(139, 92, 246, 0.12)',
-            border: '2px solid rgba(139, 92, 246, 0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 0 24px rgba(139, 92, 246, 0.2)',
-          }}
-          aria-hidden="true"
-        >
-          {/* Rocket icon */}
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M9 11L5 22l4-1.5 3-3.5 3 3.5 4 1.5-4-11"
-              stroke="#A78BFA"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M12 2C12 2 7 7 7 13h10C17 7 12 2 12 2z"
-              stroke="#A78BFA"
-              strokeWidth="1.5"
-              strokeLinejoin="round"
-            />
-            <circle cx="12" cy="11" r="2" stroke="#A78BFA" strokeWidth="1.3"/>
-          </svg>
+
+      {loading && (
+        <p className="state-message" role="status" aria-live="polite">
+          Loading release readiness report&#8230;
+        </p>
+      )}
+
+      {error && !loading && (
+        <div className="state-message state-message--error" role="alert">
+          <p className="state-message__title">Release Readiness Report could not be loaded</p>
+          <p>{error}</p>
         </div>
-        <p className="placeholder__title" style={{ color: 'var(--violet-light)' }}>
-          Coming Soon
-        </p>
-        <p style={{ color: 'var(--text-muted)', fontSize: 13, maxWidth: 320, margin: '0 auto' }}>
-          Release Readiness Report will be implemented in a future task. It will provide a
-          consolidated view of risk, coverage, and quality gates.
-        </p>
-      </div>
+      )}
+
+      {!loading && !error && report !== null && (
+        <ReleaseReport
+          report={report}
+          onDownloadJson={handleDownloadJson}
+          onPrint={handlePrint}
+        />
+      )}
     </>
   );
 }
