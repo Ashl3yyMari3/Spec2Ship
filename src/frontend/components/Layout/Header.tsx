@@ -1,59 +1,125 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
-// Inline orbital SVG logo — planet with orbiting ring
-const OrbitalLogo = (
-  <svg
-    className="header__logo-icon"
-    viewBox="0 0 32 32"
-    fill="none"
-    aria-hidden="true"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <defs>
-      <radialGradient id="logoGrad" cx="38%" cy="32%" r="58%">
-        <stop offset="0%" stopColor="#C4B5FD"/>
-        <stop offset="45%" stopColor="#7C3AED"/>
-        <stop offset="100%" stopColor="#3B0764"/>
-      </radialGradient>
-      <radialGradient id="logoRim" cx="50%" cy="50%" r="50%">
-        <stop offset="68%" stopColor="transparent"/>
-        <stop offset="86%" stopColor="#A78BFA" stopOpacity="0.5"/>
-        <stop offset="100%" stopColor="transparent"/>
-      </radialGradient>
-    </defs>
-    {/* Planet */}
-    <circle cx="16" cy="16" r="8" fill="url(#logoGrad)"/>
-    <circle cx="16" cy="16" r="8" fill="url(#logoRim)"/>
-    {/* Orbital ring */}
-    <ellipse
-      cx="16" cy="16" rx="14" ry="5"
+function OrbitalLogo(): React.ReactElement {
+  return (
+    <svg
+      className="header__logo-icon"
+      viewBox="0 0 40 40"
       fill="none"
-      stroke="url(#logoGrad)"
-      strokeWidth="1.5"
-      transform="rotate(-20 16 16)"
-      opacity="0.8"
-    />
-    {/* Orbital dot (satellite) */}
-    <circle
-      cx="27"
-      cy="13.5"
-      r="1.5"
-      fill="#A78BFA"
-      opacity="0.9"
-    />
-  </svg>
-);
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <circle
+        cx="20"
+        cy="20"
+        r="6"
+        fill="#A78BFA"
+      />
+
+      <ellipse
+        cx="20"
+        cy="20"
+        rx="16"
+        ry="7"
+        stroke="#8B5CF6"
+        strokeWidth="1.5"
+      />
+
+      <ellipse
+        cx="20"
+        cy="20"
+        rx="7"
+        ry="16"
+        stroke="#22D3EE"
+        strokeWidth="1.5"
+        transform="rotate(38 20 20)"
+      />
+
+      <circle
+        cx="33"
+        cy="18"
+        r="2"
+        fill="#39FF88"
+      />
+    </svg>
+  );
+}
 
 export default function Header(): React.ReactElement {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+
+  function handleSubmit(
+    event: React.FormEvent<HTMLFormElement>,
+  ): void {
+    event.preventDefault();
+
+    const trimmedQuery = query.trim();
+
+    if (!trimmedQuery) {
+      navigate('/requirements');
+      return;
+    }
+
+    navigate(
+      `/requirements?search=${encodeURIComponent(
+        trimmedQuery,
+      )}`,
+    );
+  }
+
   return (
-    <header className="layout__header" role="banner">
-      <Link to="/requirements" className="header__brand" aria-label="Spec2Ship — go to requirements">
-        {OrbitalLogo}
-        <span className="header__brand-text">Spec2Ship</span>
+    <header
+      className="layout__header"
+      role="banner"
+    >
+      <Link
+        to="/risk"
+        className="header__brand"
+        aria-label="Spec2Ship — go to risk dashboard"
+      >
+        <OrbitalLogo />
+
+        <span className="header__brand-copy">
+          <span className="header__brand-text">
+            Spec2Ship
+          </span>
+
+          <span className="header__brand-subtitle">
+            Requirements → Tests → Release Confidence
+          </span>
+        </span>
       </Link>
-      <span className="header__tagline" aria-hidden="true">
-        Requirements → Tests → Release Confidence
+
+      <form
+        className="header-search"
+        role="search"
+        onSubmit={handleSubmit}
+      >
+        <span
+          className="header-search__icon"
+          aria-hidden="true"
+        >
+          ⌕
+        </span>
+
+        <input
+          type="search"
+          value={query}
+          onChange={(event) =>
+            setQuery(event.target.value)
+          }
+          placeholder="Search requirements..."
+          aria-label="Search requirements"
+        />
+      </form>
+
+      <span
+        className="header__mission-control"
+        aria-hidden="true"
+      >
+        QA Mission Control
       </span>
     </header>
   );

@@ -14,8 +14,8 @@ export default function App(): React.ReactElement {
     <BrowserRouter>
       <Routes>
         <Route element={<AppLayout />}>
-          {/* Redirect root to requirements */}
-          <Route index element={<Navigate to="/requirements" replace />} />
+          {/* Redirect root to Risk Dashboard */}
+          <Route index element={<Navigate to="/risk" replace />} />
 
           {/* Implemented pages */}
           <Route path="/requirements" element={<RequirementsPage />} />
