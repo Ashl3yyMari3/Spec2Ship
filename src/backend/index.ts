@@ -4,6 +4,7 @@
  * App creation is in server.ts so tests can import without opening a port.
  */
 import { createApp } from './server.js';
+import 'dotenv/config';
 
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = '0.0.0.0';
