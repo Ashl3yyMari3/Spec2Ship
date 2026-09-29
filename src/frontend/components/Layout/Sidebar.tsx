@@ -134,7 +134,7 @@ export default function Sidebar(): React.ReactElement {
                   'sidebar__link' + (isActive ? ' sidebar__link--active' : '')
                 }
                 aria-current={undefined}
-                end={false}
+                end={item.to === '/'}
               >
                 {item.icon}
                 <span>{item.label}</span>
