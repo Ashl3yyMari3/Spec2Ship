@@ -1,16 +1,15 @@
 /**
  * server.ts — Express application factory.
  *
- * Separated from index.ts so integration tests can import the app
- * without opening a real port.
- *
- * Data is loaded once at startup and cached in module scope.
- * API routes are registered here.
+ * Separated from index.ts so tests can import the app without opening a port.
+ * Built-in ShopSphere data is used as the default demo project, while custom
+ * projects are resolved per request through the project workspace store.
  */
 
 import path from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
+import type { Request } from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 
@@ -30,44 +29,93 @@ import { computeAllRiskScores } from './services/riskService.js';
 import { buildReleaseReadinessReport } from './services/reportService.js';
 import { analyzeRequirement } from './services/aiRequirementService.js';
 import { askSpec2ShipCopilot } from './services/aiCopilotService.js';
+import {
+  createProject,
+  getProject,
+  initializeProjectStore,
+  listProjects,
+  type ProjectWorkspace,
+} from './services/projectStoreService.js';
+import type {
+  TestCase,
+  TraceabilityLink,
+} from './types/models.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ---------------------------------------------------------------------------
-// Data loading
+// Built-in demo data
 // ---------------------------------------------------------------------------
 
 const DATA_ROOT = path.resolve(__dirname, '../../data');
 
-const requirements = loadRequirements(
+const demoRequirements = loadRequirements(
   path.join(DATA_ROOT, 'requirements'),
 );
 
-const seededTests = loadTestCasesFromDirectory(
+const demoSeededTests = loadTestCasesFromDirectory(
   path.join(DATA_ROOT, 'tests'),
 );
 
-const rawLinks = loadTraceabilityLinksFromDirectory(
+const demoTraceabilityLinks = loadTraceabilityLinksFromDirectory(
   path.join(DATA_ROOT, 'traceability'),
 );
 
-const suggestions = generateTestSuggestions(
-  requirements,
-  seededTests,
-);
+initializeProjectStore({
+  requirements: demoRequirements,
+  seededTests: demoSeededTests,
+  traceabilityLinks: demoTraceabilityLinks,
+});
 
-const allTestCases = [
-  ...seededTests,
-  ...suggestions,
-];
+interface ProjectRuntime {
+  project: ProjectWorkspace;
+  suggestions: TestCase[];
+  allTestCases: TestCase[];
+  links: TraceabilityLink[];
+}
 
-// Validate links against the full test set
-const links = validateLinks(
-  rawLinks,
-  requirements,
-  allTestCases,
-);
+function projectIdFromRequest(req: Request): string | null {
+  const value = req.query.projectId;
+  return typeof value === 'string' && value.trim()
+    ? value.trim()
+    : null;
+}
+
+function buildProjectRuntime(req: Request): ProjectRuntime | null {
+  const project = getProject(projectIdFromRequest(req));
+
+  if (!project) return null;
+
+  const suggestions = generateTestSuggestions(
+    project.requirements,
+    project.seededTests,
+  );
+
+  const allTestCases = [
+    ...project.seededTests,
+    ...suggestions,
+  ];
+
+  const links = validateLinks(
+    project.traceabilityLinks,
+    project.requirements,
+    allTestCases,
+  );
+
+  return {
+    project,
+    suggestions,
+    allTestCases,
+    links,
+  };
+}
+
+function sendMissingProject(res: express.Response): void {
+  res.status(404).json({
+    error: 'Project not found.',
+  });
+}
 
 // ---------------------------------------------------------------------------
 // App factory
@@ -80,8 +128,6 @@ export function createApp(): express.Express {
     app.set('trust proxy', 1);
   }
 
-  // CORS is only needed for local development because production
-  // serves the frontend and API from the same origin.
   if (process.env.NODE_ENV !== 'production') {
     app.use(
       cors({
@@ -104,83 +150,145 @@ export function createApp(): express.Express {
   });
 
   // ------------------------------------------------------------------
-  // GET /api/requirements
+  // Projects
   // ------------------------------------------------------------------
 
-  app.get('/api/requirements', (_req, res) => {
-    res.json(requirements);
+  app.get('/api/projects', (_req, res) => {
+    res.json(listProjects());
+  });
+
+  app.post('/api/projects', (req, res) => {
+    const {
+      name,
+      description = '',
+      template = 'blank',
+    } = req.body ?? {};
+
+    if (
+      typeof name !== 'string' ||
+      !name.trim() ||
+      name.length > 100 ||
+      typeof description !== 'string' ||
+      description.length > 500 ||
+      (template !== 'blank' && template !== 'shopsphere')
+    ) {
+      res.status(400).json({
+        error:
+          'Project name is required. Description and template must be valid.',
+      });
+      return;
+    }
+
+    const project = createProject({
+      name,
+      description,
+      template,
+    });
+
+    res.status(201).json(project);
+  });
+
+  app.get('/api/projects/:projectId', (req, res) => {
+    const project = getProject(req.params.projectId);
+
+    if (!project) {
+      sendMissingProject(res);
+      return;
+    }
+
+    res.json(project);
   });
 
   // ------------------------------------------------------------------
-  // GET /api/tests
+  // Project-scoped QA data
   // ------------------------------------------------------------------
 
-  app.get('/api/tests', (_req, res) => {
-    res.json(allTestCases);
+  app.get('/api/requirements', (req, res) => {
+    const runtime = buildProjectRuntime(req);
+
+    if (!runtime) {
+      sendMissingProject(res);
+      return;
+    }
+
+    res.json(runtime.project.requirements);
+  });
+
+  app.get('/api/tests', (req, res) => {
+    const runtime = buildProjectRuntime(req);
+
+    if (!runtime) {
+      sendMissingProject(res);
+      return;
+    }
+
+    res.json(runtime.allTestCases);
+  });
+
+  app.get('/api/test-suggestions', (req, res) => {
+    const runtime = buildProjectRuntime(req);
+
+    if (!runtime) {
+      sendMissingProject(res);
+      return;
+    }
+
+    res.json(runtime.suggestions);
   });
 
   // ------------------------------------------------------------------
-  // GET /api/test-suggestions
+  // POST /api/ai/analyze-requirement
   // ------------------------------------------------------------------
 
-  app.get('/api/test-suggestions', (_req, res) => {
-    res.json(suggestions);
-  });
+  app.post(
+    '/api/ai/analyze-requirement',
+    aiRateLimiter,
+    async (req, res) => {
+      const { requirement, acceptanceCriteria } = req.body;
 
+      if (
+        typeof requirement !== 'string' ||
+        !requirement.trim() ||
+        !Array.isArray(acceptanceCriteria) ||
+        !acceptanceCriteria.every(
+          (criterion) => typeof criterion === 'string',
+        )
+      ) {
+        res.status(400).json({
+          error:
+            'A requirement and an array of acceptance criteria are required.',
+        });
+        return;
+      }
 
-// ------------------------------------------------------------------
-// POST /api/ai/analyze-requirement
-// ------------------------------------------------------------------
+      if (
+        requirement.length > 5000 ||
+        acceptanceCriteria.length > 25 ||
+        acceptanceCriteria.some(
+          (criterion) => criterion.length > 1500,
+        )
+      ) {
+        res.status(400).json({
+          error: 'Requirement analysis input exceeds allowed limits.',
+        });
+        return;
+      }
 
-app.post('/api/ai/analyze-requirement', aiRateLimiter, async (req, res) => {
-  const { requirement, acceptanceCriteria } = req.body;
+      try {
+        const analysis = await analyzeRequirement(
+          requirement.trim(),
+          acceptanceCriteria,
+        );
 
-  if (
-    typeof requirement !== 'string' ||
-    !requirement.trim() ||
-    !Array.isArray(acceptanceCriteria) ||
-    !acceptanceCriteria.every(
-      (criterion) => typeof criterion === 'string',
-    )
-  ) {
-    res.status(400).json({
-      error:
-        'A requirement and an array of acceptance criteria are required.',
-    });
-
-    return;
-  }
-
-  if (
-    requirement.length > 5000 ||
-    acceptanceCriteria.length > 25 ||
-    acceptanceCriteria.some(
-      (criterion) => criterion.length > 1500,
-    )
-  ) {
-    res.status(400).json({
-      error: 'Requirement analysis input exceeds allowed limits.',
-    });
-
-    return;
-  }
-
-  try {
-    const analysis = await analyzeRequirement(
-      requirement.trim(),
-      acceptanceCriteria,
-    );
-
-    res.json(analysis);
-  } catch (error) {
-    console.error('AI requirement analysis failed:', error);
-
-    res.status(500).json({
-      error: 'AI requirement analysis failed.',
-    });
-  }
-});
-
+        res.json(analysis);
+      } catch (error) {
+        console.error('AI requirement analysis failed:', error);
+        res.status(500).json({
+          error: 'AI requirement analysis failed.',
+        });
+      }
+    },
+  );
 
   // ------------------------------------------------------------------
   // POST /api/ai/chat
@@ -188,6 +296,12 @@ app.post('/api/ai/analyze-requirement', aiRateLimiter, async (req, res) => {
 
   app.post('/api/ai/chat', aiRateLimiter, async (req, res) => {
     const { message, history = [] } = req.body ?? {};
+    const runtime = buildProjectRuntime(req);
+
+    if (!runtime) {
+      sendMissingProject(res);
+      return;
+    }
 
     const validHistory =
       Array.isArray(history) &&
@@ -214,27 +328,30 @@ app.post('/api/ai/analyze-requirement', aiRateLimiter, async (req, res) => {
 
     try {
       const coverage = computeCoverageGaps(
-        requirements,
-        allTestCases,
-        links,
+        runtime.project.requirements,
+        runtime.allTestCases,
+        runtime.links,
       );
+
       const riskScores = computeAllRiskScores(
-        requirements,
-        allTestCases,
-        links,
+        runtime.project.requirements,
+        runtime.allTestCases,
+        runtime.links,
       );
+
       const releaseReadiness = buildReleaseReadinessReport(
-        requirements,
-        allTestCases,
-        links,
+        runtime.project.requirements,
+        runtime.allTestCases,
+        runtime.links,
       );
-      const impactReports = requirements
+
+      const impactReports = runtime.project.requirements
         .map((requirement) =>
           computeImpact(
             requirement.id,
-            requirements,
-            allTestCases,
-            links,
+            runtime.project.requirements,
+            runtime.allTestCases,
+            runtime.links,
           ),
         )
         .filter((report) => report !== null);
@@ -243,9 +360,9 @@ app.post('/api/ai/analyze-requirement', aiRateLimiter, async (req, res) => {
         message.trim(),
         history,
         {
-          requirements,
-          testCases: allTestCases,
-          traceabilityLinks: links,
+          requirements: runtime.project.requirements,
+          testCases: runtime.allTestCases,
+          traceabilityLinks: runtime.links,
           coverage,
           riskScores,
           releaseReadiness,
@@ -253,7 +370,10 @@ app.post('/api/ai/analyze-requirement', aiRateLimiter, async (req, res) => {
         },
       );
 
-      res.json({ answer });
+      res.json({
+        projectId: runtime.project.id,
+        answer,
+      });
     } catch (error) {
       console.error('Spec2Ship AI chat failed:', error);
       res.status(500).json({
@@ -262,40 +382,48 @@ app.post('/api/ai/analyze-requirement', aiRateLimiter, async (req, res) => {
     }
   });
 
-  // ------------------------------------------------------------------
-  // GET /api/traceability
-  // ------------------------------------------------------------------
+  app.get('/api/traceability', (req, res) => {
+    const runtime = buildProjectRuntime(req);
 
-  app.get('/api/traceability', (_req, res) => {
+    if (!runtime) {
+      sendMissingProject(res);
+      return;
+    }
+
     const matrix = buildTraceabilityMatrix(
-      requirements,
-      allTestCases,
-      links,
+      runtime.project.requirements,
+      runtime.allTestCases,
+      runtime.links,
     );
 
     res.json(matrix);
   });
 
-  // ------------------------------------------------------------------
-  // GET /api/coverage-gaps
-  // ------------------------------------------------------------------
+  app.get('/api/coverage-gaps', (req, res) => {
+    const runtime = buildProjectRuntime(req);
 
-  app.get('/api/coverage-gaps', (_req, res) => {
+    if (!runtime) {
+      sendMissingProject(res);
+      return;
+    }
+
     const report = computeCoverageGaps(
-      requirements,
-      allTestCases,
-      links,
+      runtime.project.requirements,
+      runtime.allTestCases,
+      runtime.links,
     );
 
     res.json(report);
   });
 
-  // ------------------------------------------------------------------
-  // GET /api/impact/:requirementId
-  // ------------------------------------------------------------------
-
   app.get('/api/impact/:requirementId', (req, res) => {
     const { requirementId } = req.params;
+    const runtime = buildProjectRuntime(req);
+
+    if (!runtime) {
+      sendMissingProject(res);
+      return;
+    }
 
     if (!isValidRequirementId(requirementId)) {
       res.status(400).json({
@@ -303,15 +431,14 @@ app.post('/api/ai/analyze-requirement', aiRateLimiter, async (req, res) => {
           'Invalid requirement ID format. Expected pattern: [A-Z][A-Z0-9]*(-[A-Z0-9]+)+',
         requirementId,
       });
-
       return;
     }
 
     const report = computeImpact(
       requirementId,
-      requirements,
-      allTestCases,
-      links,
+      runtime.project.requirements,
+      runtime.allTestCases,
+      runtime.links,
     );
 
     if (!report) {
@@ -319,36 +446,41 @@ app.post('/api/ai/analyze-requirement', aiRateLimiter, async (req, res) => {
         error: `Requirement "${requirementId}" not found.`,
         requirementId,
       });
-
       return;
     }
 
     res.json(report);
   });
 
-  // ------------------------------------------------------------------
-  // GET /api/risk
-  // ------------------------------------------------------------------
+  app.get('/api/risk', (req, res) => {
+    const runtime = buildProjectRuntime(req);
 
-  app.get('/api/risk', (_req, res) => {
+    if (!runtime) {
+      sendMissingProject(res);
+      return;
+    }
+
     const scores = computeAllRiskScores(
-      requirements,
-      allTestCases,
-      links,
+      runtime.project.requirements,
+      runtime.allTestCases,
+      runtime.links,
     );
 
     res.json(scores);
   });
 
-  // ------------------------------------------------------------------
-  // GET /api/release-readiness
-  // ------------------------------------------------------------------
+  app.get('/api/release-readiness', (req, res) => {
+    const runtime = buildProjectRuntime(req);
 
-  app.get('/api/release-readiness', (_req, res) => {
+    if (!runtime) {
+      sendMissingProject(res);
+      return;
+    }
+
     const report = buildReleaseReadinessReport(
-      requirements,
-      allTestCases,
-      links,
+      runtime.project.requirements,
+      runtime.allTestCases,
+      runtime.links,
     );
 
     res.json(report);
