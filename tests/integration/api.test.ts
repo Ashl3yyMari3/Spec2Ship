@@ -305,53 +305,55 @@ describe('AI project test workflow guardrails', () => {
     expect(res.body).toHaveProperty('error', 'Project not found.');
   });
 
-  it('reports the exact duplicate test case ID in a batch', async () => {
+  it('assigns requirement and test IDs from the project Ship Key', async () => {
     const projectRes = await request(app)
       .post('/api/projects')
       .send({
-        name: 'Duplicate ID Guardrail Test',
+        name: 'Ship Key Test Project',
+        shipKey: 'SKT',
         description: 'Temporary integration-test workspace.',
         template: 'blank',
       });
 
     expect(projectRes.status).toBe(201);
+    expect(projectRes.body.shipKey).toBe('SKT');
 
     const projectId = projectRes.body.id as string;
 
     const requirementRes = await request(app)
       .post(`/api/projects/${projectId}/requirements`)
       .send({
-        id: 'REQ-DUP-001',
-        title: 'Duplicate ID Guardrail',
-        description: 'Provide a requirement for duplicate-ID validation.',
-        acceptanceCriteria: ['Duplicate test IDs must be rejected clearly.'],
+        title: 'Automatic requirement ID',
+        description: 'Spec2Ship should assign the requirement ID.',
+        acceptanceCriteria: ['The ID is generated from the Ship Key.'],
         domain: 'testing',
         criticality: 'medium',
         changed: false,
       });
 
     expect(requirementRes.status).toBe(201);
+    expect(requirementRes.body.requirements[0].id).toBe('SKT-1');
 
-    const duplicateRes = await request(app)
+    const batchRes = await request(app)
       .post(`/api/projects/${projectId}/tests/batch`)
       .send({
         tests: [
           {
-            id: 'TC-DUP-001',
-            title: 'Duplicate one',
-            description: 'First duplicate test.',
+            id: 'IGNORED-CLIENT-ID',
+            title: 'Generated test one',
+            description: 'First auto-numbered test.',
             type: 'functional',
-            requirementId: 'REQ-DUP-001',
+            requirementId: 'SKT-1',
             status: 'not_run',
             automated: false,
             coverageType: 'partial',
           },
           {
-            id: 'tc-dup-001',
-            title: 'Duplicate two',
-            description: 'Same ID with different casing.',
+            id: 'IGNORED-CLIENT-ID',
+            title: 'Generated test two',
+            description: 'Second auto-numbered test.',
             type: 'negative',
-            requirementId: 'REQ-DUP-001',
+            requirementId: 'SKT-1',
             status: 'not_run',
             automated: false,
             coverageType: 'partial',
@@ -359,10 +361,33 @@ describe('AI project test workflow guardrails', () => {
         ],
       });
 
-    expect(duplicateRes.status).toBe(409);
-    expect(duplicateRes.body.duplicateIds).toEqual([
-      'TC-DUP-001',
+    expect(batchRes.status).toBe(201);
+    expect(batchRes.body.assignedIds).toEqual([
+      'SKT-T1',
+      'SKT-T2',
     ]);
-    expect(duplicateRes.body.error).toContain('TC-DUP-001');
+  });
+
+  it('rejects a duplicate Ship Key', async () => {
+    const first = await request(app)
+      .post('/api/projects')
+      .send({
+        name: 'First Key Owner',
+        shipKey: 'KEYX',
+        template: 'blank',
+      });
+
+    expect(first.status).toBe(201);
+
+    const second = await request(app)
+      .post('/api/projects')
+      .send({
+        name: 'Second Key Owner',
+        shipKey: 'keyx',
+        template: 'blank',
+      });
+
+    expect(second.status).toBe(409);
+    expect(second.body.error).toContain('KEYX');
   });
 });
