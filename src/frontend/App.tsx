@@ -13,11 +13,13 @@ import ProjectsPage from './pages/ProjectsPage';
 import ProjectSetupPage from './pages/ProjectSetupPage';
 import AutomationCenterPage from './pages/AutomationCenterPage';
 import { ProjectProvider } from './context/ProjectContext';
+import { CopilotProvider } from './context/CopilotContext';
 
 export default function App(): React.ReactElement {
   return (
     <ProjectProvider>
-      <BrowserRouter>
+      <CopilotProvider>
+        <BrowserRouter>
       <Routes>
         <Route element={<AppLayout />}>
           {/* Redirect root to Risk Dashboard */}
@@ -39,7 +41,8 @@ export default function App(): React.ReactElement {
           <Route path="/automation" element={<AutomationCenterPage />} />
         </Route>
       </Routes>
-      </BrowserRouter>
+        </BrowserRouter>
+      </CopilotProvider>
     </ProjectProvider>
   );
 }
