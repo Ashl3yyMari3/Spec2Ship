@@ -1,5 +1,5 @@
 /**
- * api.test.ts — Integration tests for all 8 API endpoints using supertest.
+ * api.test.ts — Integration tests for Spec2Ship API endpoints using supertest.
  */
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
@@ -193,5 +193,38 @@ describe('GET /api/release-readiness', () => {
     // TC-AUTH-003-02 is not_run, so the dataset should be Review Required
     const res = await request(app).get('/api/release-readiness');
     expect(res.body.overallVerdict).toBe('Review Required');
+  });
+});
+
+
+describe('POST /api/ai/chat', () => {
+  it('returns 400 when message is empty', async () => {
+    const res = await request(app)
+      .post('/api/ai/chat')
+      .send({ message: '', history: [] });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('error');
+  });
+
+  it('returns 400 when message exceeds the input limit', async () => {
+    const res = await request(app)
+      .post('/api/ai/chat')
+      .send({ message: 'x'.repeat(2001), history: [] });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('error');
+  });
+
+  it('returns 400 for invalid conversation history', async () => {
+    const res = await request(app)
+      .post('/api/ai/chat')
+      .send({
+        message: 'Why is this release under review?',
+        history: [{ role: 'system', content: 'invalid role' }],
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('error');
   });
 });
