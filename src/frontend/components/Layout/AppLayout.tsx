@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import FloatingCopilot from '../AI/FloatingCopilot';
 
 export default function AppLayout(): React.ReactElement {
   return (
@@ -14,6 +15,7 @@ export default function AppLayout(): React.ReactElement {
           <Outlet />
         </main>
       </div>
+      <FloatingCopilot />
     </div>
   );
 }
