@@ -12,6 +12,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 
 import {
   loadRequirements,
@@ -28,6 +29,7 @@ import { computeImpact } from './services/impactService.js';
 import { computeAllRiskScores } from './services/riskService.js';
 import { buildReleaseReadinessReport } from './services/reportService.js';
 import { analyzeRequirement } from './services/aiRequirementService.js';
+import { askSpec2ShipCopilot } from './services/aiCopilotService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,6 +93,12 @@ export function createApp(): express.Express {
 
   app.use(express.json());
 
+  const aiRateLimiter = rateLimit({
+    windowMs: 60_000,
+    limit: 20,
+    legacyHeaders: false,
+  });
+
   // ------------------------------------------------------------------
   // GET /api/requirements
   // ------------------------------------------------------------------
@@ -120,7 +128,7 @@ export function createApp(): express.Express {
 // POST /api/ai/analyze-requirement
 // ------------------------------------------------------------------
 
-app.post('/api/ai/analyze-requirement', async (req, res) => {
+app.post('/api/ai/analyze-requirement', aiRateLimiter, async (req, res) => {
   const { requirement, acceptanceCriteria } = req.body;
 
   if (
@@ -169,6 +177,86 @@ app.post('/api/ai/analyze-requirement', async (req, res) => {
   }
 });
 
+
+  // ------------------------------------------------------------------
+  // POST /api/ai/chat
+  // ------------------------------------------------------------------
+
+  app.post('/api/ai/chat', aiRateLimiter, async (req, res) => {
+    const { message, history = [] } = req.body ?? {};
+
+    const validHistory =
+      Array.isArray(history) &&
+      history.length <= 10 &&
+      history.every(
+        (item) =>
+          item &&
+          (item.role === 'user' || item.role === 'assistant') &&
+          typeof item.content === 'string' &&
+          item.content.length <= 3000,
+      );
+
+    if (
+      typeof message !== 'string' ||
+      !message.trim() ||
+      message.length > 2000 ||
+      !validHistory
+    ) {
+      res.status(400).json({
+        error: 'A valid message and optional chat history are required.',
+      });
+      return;
+    }
+
+    try {
+      const coverage = computeCoverageGaps(
+        requirements,
+        allTestCases,
+        links,
+      );
+      const riskScores = computeAllRiskScores(
+        requirements,
+        allTestCases,
+        links,
+      );
+      const releaseReadiness = buildReleaseReadinessReport(
+        requirements,
+        allTestCases,
+        links,
+      );
+      const impactReports = requirements
+        .map((requirement) =>
+          computeImpact(
+            requirement.id,
+            requirements,
+            allTestCases,
+            links,
+          ),
+        )
+        .filter((report) => report !== null);
+
+      const answer = await askSpec2ShipCopilot(
+        message.trim(),
+        history,
+        {
+          requirements,
+          testCases: allTestCases,
+          traceabilityLinks: links,
+          coverage,
+          riskScores,
+          releaseReadiness,
+          impactReports,
+        },
+      );
+
+      res.json({ answer });
+    } catch (error) {
+      console.error('Spec2Ship AI chat failed:', error);
+      res.status(500).json({
+        error: 'Spec2Ship AI could not answer that question.',
+      });
+    }
+  });
 
   // ------------------------------------------------------------------
   // GET /api/traceability
