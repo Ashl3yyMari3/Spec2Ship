@@ -228,3 +228,42 @@ describe('POST /api/ai/chat', () => {
     expect(res.body).toHaveProperty('error');
   });
 });
+
+
+describe('Project workspaces', () => {
+  it('lists the built-in ShopSphere demo project', async () => {
+    const res = await request(app).get('/api/projects');
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+
+    const demo = res.body.find(
+      (project: { id: string }) =>
+        project.id === 'shopsphere-demo',
+    );
+
+    expect(demo).toBeDefined();
+    expect(demo.isDemo).toBe(true);
+    expect(demo.requirementCount).toBeGreaterThan(0);
+  });
+
+  it('scopes requirements to the selected demo project', async () => {
+    const res = await request(app)
+      .get('/api/requirements')
+      .query({ projectId: 'shopsphere-demo' });
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+    expect(res.body[0]).toHaveProperty('id');
+  });
+
+  it('returns 404 when a selected project does not exist', async () => {
+    const res = await request(app)
+      .get('/api/risk')
+      .query({ projectId: 'missing-project' });
+
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty('error', 'Project not found.');
+  });
+});
