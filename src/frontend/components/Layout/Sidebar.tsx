@@ -34,6 +34,12 @@ const IconRequirements = (
   </svg>
 );
 
+const IconAutomation = (
+  <svg className="sidebar__icon" viewBox="0 0 18 18" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10.5 2.5L5.5 10h3L7.5 15.5l5-7.5h-3l1-5.5z" stroke="currentColor" strokeWidth="1.35" strokeLinejoin="round"/>
+  </svg>
+);
+
 const IconTestCases = (
   <svg className="sidebar__icon" viewBox="0 0 18 18" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
     <path d="M6 3h6v4l2 3-2 3v2H6v-2L4 10l2-3V3z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
@@ -97,6 +103,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Project Setup',    to: '/project/setup', icon: IconSetup },
   { label: 'Requirements',     to: '/requirements',  icon: IconRequirements },
   { label: 'Test Cases',       to: '/tests',         icon: IconTestCases },
+  { label: 'Automation Center',to: '/automation',    icon: IconAutomation },
   { label: 'Traceability',     to: '/traceability',  icon: IconTraceability },
   { label: 'Coverage Gaps',    to: '/coverage-gaps', icon: IconCoverageGaps },
   { label: 'Change Impact',    to: '/impact',        icon: IconImpact },
