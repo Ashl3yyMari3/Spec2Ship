@@ -9,6 +9,13 @@ interface NavItem {
 
 // --- Inline SVG icons for each nav item ---
 
+const IconHome = (
+  <svg className="sidebar__icon" viewBox="0 0 18 18" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 8.2L9 3l6 5.2V15H10.8v-4.2H7.2V15H3V8.2z" stroke="currentColor" strokeWidth="1.35" strokeLinejoin="round"/>
+  </svg>
+);
+
+
 const IconProjects = (
   <svg className="sidebar__icon" viewBox="0 0 18 18" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
     <rect x="2.5" y="4" width="13" height="10.5" rx="2" stroke="currentColor" strokeWidth="1.4"/>
@@ -99,6 +106,7 @@ const IconAI = (
 );
 
 const NAV_ITEMS: NavItem[] = [
+  { label: 'Home',             to: '/',              icon: IconHome },
   { label: 'Projects',         to: '/projects',      icon: IconProjects },
   { label: 'Project Setup',    to: '/project/setup', icon: IconSetup },
   { label: 'Requirements',     to: '/requirements',  icon: IconRequirements },
