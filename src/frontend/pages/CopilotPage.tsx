@@ -1,5 +1,6 @@
 import React, { FormEvent, KeyboardEvent, useMemo, useState } from 'react';
 import '../styles/copilot.css';
+import { useProject } from '../context/ProjectContext';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -14,6 +15,7 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 export default function CopilotPage(): React.ReactElement {
+  const { projectApiUrl } = useProject();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
@@ -46,7 +48,7 @@ export default function CopilotPage(): React.ReactElement {
     setError(null);
 
     try {
-      const response = await fetch('/api/ai/chat', {
+      const response = await fetch(projectApiUrl('/api/ai/chat'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
