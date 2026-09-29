@@ -66,50 +66,56 @@ ${acceptanceCriteria
   .join('\n')}
 `;
 
-let response;
+const models = [
+  'gemini-3.8-flash',
+  'gemini-3.7-flash',
+  'gemini-3.5-flash-lite',
+];
 
-for (let attempt = 1; attempt <= 3; attempt++) {
-  try {
-    response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      },
-    });
+let lastError: unknown;
 
-    break;
-  } catch (error: any) {
-    const isTemporaryError =
-      error?.status === 503 || error?.status === 429;
+for (const model of models) {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+        },
+      });
 
-    if (!isTemporaryError || attempt === 3) {
-      throw error;
+      const text = response.text;
+
+      if (!text) {
+        throw new Error('AI returned an empty response.');
+      }
+
+      try {
+        return JSON.parse(text) as AIRequirementAnalysis;
+      } catch {
+        throw new Error('AI returned an invalid JSON response.');
+      }
+    } catch (error: any) {
+      lastError = error;
+
+      const isTemporaryError =
+        error?.status === 503 || error?.status === 429;
+
+      if (!isTemporaryError) {
+        throw error;
+      }
+
+      if (attempt < 2) {
+        const delay = 1000 * Math.pow(2, attempt - 1);
+        console.log(
+          `[spec2ship-ai] ${model} unavailable. Retrying in ${delay}ms...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
     }
-
-    const delay = 1000 * Math.pow(2, attempt - 1);
-
-    console.log(
-      `[spec2ship-ai] Gemini unavailable. Retrying in ${delay}ms...`,
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, delay));
   }
 }
 
-if (!response) {
-  throw new Error('AI analysis failed after multiple attempts.');
-}
-
-  const text = response.text;
-
-  if (!text) {
-    throw new Error('AI returned an empty response.');
-  }
-
-  try {
-    return JSON.parse(text) as AIRequirementAnalysis;
-  } catch {
-    throw new Error('AI returned an invalid JSON response.');
-  }
+throw lastError ?? new Error('All configured Gemini models were unavailable.');
 }
