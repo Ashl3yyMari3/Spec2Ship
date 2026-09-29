@@ -9,6 +9,7 @@ import type {
   TraceabilityLink,
 } from '@backend/types/models';
 import { useProject } from '../context/ProjectContext';
+import AIProjectTestGenerator from '../components/Projects/AIProjectTestGenerator';
 import '../styles/project-setup.css';
 
 interface ProjectWorkspace {
@@ -76,6 +77,7 @@ export default function ProjectSetupPage(): React.ReactElement {
   const [testCoverageType, setTestCoverageType] =
     useState<'full' | 'partial'>('partial');
   const [testNotes, setTestNotes] = useState('');
+  const [aiRequirementId, setAiRequirementId] = useState('');
   const [savingTest, setSavingTest] = useState(false);
   const [testError, setTestError] = useState<string | null>(null);
 
@@ -102,6 +104,14 @@ export default function ProjectSetupPage(): React.ReactElement {
         payload.requirements[0]?.id ||
         '',
       );
+
+      setAiRequirementId((current) =>
+        payload.requirements.some(
+          (requirement) => requirement.id === current,
+        )
+          ? current
+          : payload.requirements[0]?.id ?? '',
+      );
     } catch (err) {
       setPageError(
         err instanceof Error
@@ -120,6 +130,16 @@ export default function ProjectSetupPage(): React.ReactElement {
   const traceabilityCount = useMemo(
     () => project?.traceabilityLinks.length ?? 0,
     [project],
+  );
+
+  const aiRequirement = useMemo(
+    () =>
+      project?.requirements.find(
+        (requirement) => requirement.id === aiRequirementId,
+      ) ??
+      project?.requirements[0] ??
+      null,
+    [project, aiRequirementId],
   );
 
   async function handleAddRequirement(
@@ -599,6 +619,43 @@ export default function ProjectSetupPage(): React.ReactElement {
             )}
           </section>
         </div>
+      )}
+
+      {!project.isDemo && project.requirements.length > 0 && aiRequirement && (
+        <section className="project-setup__ai-panel">
+          <div className="project-setup__ai-heading">
+            <div>
+              <p className="project-setup__eyebrow">Step 3</p>
+              <h2>Generate Test Cases with AI</h2>
+              <p>
+                Choose a requirement, review Gemini’s proposed tests, and add
+                only the test cases you want to keep.
+              </p>
+            </div>
+
+            <label>
+              <span>Requirement</span>
+              <select
+                value={aiRequirement.id}
+                onChange={(event) =>
+                  setAiRequirementId(event.target.value)
+                }
+              >
+                {project.requirements.map((requirement) => (
+                  <option key={requirement.id} value={requirement.id}>
+                    {requirement.id} · {requirement.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <AIProjectTestGenerator
+            projectId={project.id}
+            requirement={aiRequirement}
+            onSaved={loadProject}
+          />
+        </section>
       )}
 
       <section className="project-setup__inventory">
