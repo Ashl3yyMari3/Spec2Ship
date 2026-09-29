@@ -354,13 +354,21 @@ export default function ProjectSetupPage(): React.ReactElement {
             <form onSubmit={handleAddRequirement}>
               <div className="project-setup__row">
                 <label>
-                  <span>Requirement ID</span>
+                  <span>Requirement ID (unique)</span>
                   <input
                     value={reqId}
                     onChange={(event) => setReqId(event.target.value)}
                     placeholder="REQ-AUTH-001"
+                    aria-describedby="requirement-id-help"
                     required
                   />
+                  <small
+                    id="requirement-id-help"
+                    className="project-setup__field-help"
+                  >
+                    Use one ID per requirement, for example REQ-AUTH-001.
+                    Spec2Ship blocks duplicates automatically.
+                  </small>
                 </label>
 
                 <label>
@@ -476,13 +484,21 @@ export default function ProjectSetupPage(): React.ReactElement {
               <form onSubmit={handleAddTest}>
                 <div className="project-setup__row">
                   <label>
-                    <span>Test Case ID</span>
+                    <span>Test Case ID (unique)</span>
                     <input
                       value={testId}
                       onChange={(event) => setTestId(event.target.value)}
                       placeholder="TC-AUTH-001-01"
+                      aria-describedby="test-case-id-help"
                       required
                     />
+                    <small
+                      id="test-case-id-help"
+                      className="project-setup__field-help"
+                    >
+                      Manual tests need a unique ID. AI-generated tests get
+                      the next available ID automatically.
+                    </small>
                   </label>
 
                   <label>
