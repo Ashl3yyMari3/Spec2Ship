@@ -32,6 +32,14 @@ export type TestType = 'functional' | 'negative' | 'boundary' | 'security' | 'ed
 export type TestStatus = 'pass' | 'fail' | 'not_run' | 'blocked';
 export type TestOrigin = 'seeded' | 'suggested';
 
+export interface AutomationMetadata {
+  framework: 'playwright' | 'selenium' | 'cypress' | 'appium' | 'other';
+  sourceFile?: string;
+  projectName?: string;
+  durationMs?: number;
+  importedAt?: string;
+}
+
 /**
  * References a single acceptance criterion in a specific requirement.
  * criterionIndex is a 0-based index into Requirement.acceptanceCriteria.
@@ -52,6 +60,7 @@ export interface TestCase {
   automated: boolean;
   origin: TestOrigin;                    // seeded = hand-authored; suggested = generated
   notes: string;
+  automation?: AutomationMetadata;
 }
 
 // ---------------------------------------------------------------------------
