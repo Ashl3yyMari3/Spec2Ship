@@ -26,6 +26,7 @@ export interface ProjectWorkspace {
   createdAt: string;
   updatedAt: string;
   isDemo: boolean;
+  idSchemeVersion: number;
   requirements: Requirement[];
   seededTests: TestCase[];
   traceabilityLinks: TraceabilityLink[];
@@ -97,20 +98,115 @@ function deriveLegacyShipKey(name: string): string {
   return 'PRJ';
 }
 
-function migrateStoredProject(
+function rekeyProjectData(
   project: ProjectWorkspace,
+  shipKey: string,
 ): ProjectWorkspace {
-  if (project.shipKey && isValidShipKey(project.shipKey)) {
-    return {
-      ...project,
-      shipKey: normalizeShipKey(project.shipKey),
-    };
-  }
+  const requirementMap = new Map<string, string>();
+  const testMap = new Map<string, string>();
+
+  const requirements = project.requirements.map(
+    (requirement, index) => {
+      const id = `${shipKey}-${index + 1}`;
+      requirementMap.set(requirement.id, id);
+
+      return {
+        ...requirement,
+        id,
+      };
+    },
+  );
+
+  const seededTests = project.seededTests.map(
+    (testCase, index) => {
+      const id = `${shipKey}-T${index + 1}`;
+      testMap.set(testCase.id, id);
+
+      return {
+        ...testCase,
+        id,
+        requirementIds: testCase.requirementIds
+          .map((requirementId) =>
+            requirementMap.get(requirementId),
+          )
+          .filter((value): value is string => Boolean(value)),
+        acceptanceCriteriaRefs:
+          testCase.acceptanceCriteriaRefs
+            .map((reference) => {
+              const requirementId =
+                requirementMap.get(reference.requirementId);
+
+              if (!requirementId) return null;
+
+              return {
+                ...reference,
+                requirementId,
+              };
+            })
+            .filter(
+              (
+                value,
+              ): value is NonNullable<typeof value> =>
+                value !== null,
+            ),
+      };
+    },
+  );
+
+  const traceabilityLinks = project.traceabilityLinks
+    .map((link) => {
+      const requirementId =
+        requirementMap.get(link.requirementId);
+      const testCaseId = testMap.get(link.testCaseId);
+
+      if (!requirementId || !testCaseId) return null;
+
+      return {
+        ...link,
+        requirementId,
+        testCaseId,
+      };
+    })
+    .filter(
+      (
+        value,
+      ): value is NonNullable<typeof value> =>
+        value !== null,
+    );
 
   return {
     ...project,
-    shipKey: deriveLegacyShipKey(project.name),
+    shipKey,
+    idSchemeVersion: 2,
+    requirements,
+    seededTests,
+    traceabilityLinks,
   };
+}
+
+function migrateStoredProject(
+  project: ProjectWorkspace,
+): ProjectWorkspace {
+  const shipKey =
+    project.shipKey && isValidShipKey(project.shipKey)
+      ? normalizeShipKey(project.shipKey)
+      : deriveLegacyShipKey(project.name);
+
+  if (project.idSchemeVersion === 2) {
+    return {
+      ...project,
+      shipKey,
+    };
+  }
+
+  return rekeyProjectData(
+    {
+      ...project,
+      shipKey,
+      idSchemeVersion: project.idSchemeVersion ?? 1,
+    },
+    shipKey,
+  );
 }
 
 function loadCustomProjects(): void {
@@ -193,6 +289,7 @@ export function initializeProjectStore(input: {
     createdAt: now,
     updatedAt: now,
     isDemo: true,
+    idSchemeVersion: 2,
     requirements: clone(input.requirements),
     seededTests: clone(input.seededTests),
     traceabilityLinks: clone(input.traceabilityLinks),
@@ -397,6 +494,7 @@ export function createProject(input: {
     createdAt: now,
     updatedAt: now,
     isDemo: false,
+    idSchemeVersion: 2,
     ...templateData,
   };
 
@@ -473,6 +571,7 @@ export function saveProject(
     shipKey: normalizeShipKey(project.shipKey),
     updatedAt: new Date().toISOString(),
     isDemo: false,
+    idSchemeVersion: 2,
   };
 
   customProjects.set(next.id, next);
