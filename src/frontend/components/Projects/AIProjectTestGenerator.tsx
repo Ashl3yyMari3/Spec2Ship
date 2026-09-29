@@ -257,7 +257,7 @@ export default function AIProjectTestGenerator({
                       </span>
 
                       <span>{test.description}</span>
-                      <small>{test.id}</small>
+                      <small>{test.id} · auto-assigned unique ID</small>
                     </span>
                   </label>
                 ))}
