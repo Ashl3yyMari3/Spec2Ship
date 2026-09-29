@@ -66,6 +66,14 @@ const IconReport = (
   </svg>
 );
 
+const IconAI = (
+  <svg className="sidebar__icon" viewBox="0 0 18 18" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <path d="M9 2.5l1.2 3.3L13.5 7l-3.3 1.2L9 11.5 7.8 8.2 4.5 7l3.3-1.2L9 2.5z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round"/>
+    <path d="M13.8 10.3l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8z" fill="currentColor"/>
+    <circle cx="4" cy="13.5" r="1.2" stroke="currentColor" strokeWidth="1.1"/>
+  </svg>
+);
+
 const NAV_ITEMS: NavItem[] = [
   { label: 'Requirements',     to: '/requirements',  icon: IconRequirements },
   { label: 'Test Cases',       to: '/tests',         icon: IconTestCases },
@@ -74,6 +82,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Change Impact',    to: '/impact',        icon: IconImpact },
   { label: 'Risk Dashboard',   to: '/risk',          icon: IconRisk },
   { label: 'Release Readiness',to: '/report',        icon: IconReport },
+  { label: 'Spec2Ship AI',      to: '/ai',            icon: IconAI },
 ];
 
 export default function Sidebar(): React.ReactElement {
