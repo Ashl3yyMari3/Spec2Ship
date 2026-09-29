@@ -617,45 +617,53 @@ export default function ProjectSetupPage(): React.ReactElement {
                 </button>
               </form>
             )}
+
+            {project.requirements.length > 0 && aiRequirement && (
+              <div className="project-setup__ai-addon">
+                <div className="project-setup__ai-divider">
+                  <span>or</span>
+                </div>
+
+                <div className="project-setup__ai-heading">
+                  <div>
+                    <p className="project-setup__eyebrow">AI Assist</p>
+                    <h3>Generate Test Cases with AI</h3>
+                    <p>
+                      Don’t want to enter every test manually? Choose a
+                      requirement and let Spec2Ship draft test scenarios for
+                      you to review before saving.
+                    </p>
+                  </div>
+
+                  <label>
+                    <span>Requirement</span>
+                    <select
+                      value={aiRequirement.id}
+                      onChange={(event) =>
+                        setAiRequirementId(event.target.value)
+                      }
+                    >
+                      {project.requirements.map((requirement) => (
+                        <option
+                          key={requirement.id}
+                          value={requirement.id}
+                        >
+                          {requirement.id} · {requirement.title}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <AIProjectTestGenerator
+                  projectId={project.id}
+                  requirement={aiRequirement}
+                  onSaved={loadProject}
+                />
+              </div>
+            )}
           </section>
         </div>
-      )}
-
-      {!project.isDemo && project.requirements.length > 0 && aiRequirement && (
-        <section className="project-setup__ai-panel">
-          <div className="project-setup__ai-heading">
-            <div>
-              <p className="project-setup__eyebrow">Step 3</p>
-              <h2>Generate Test Cases with AI</h2>
-              <p>
-                Choose a requirement, review Gemini’s proposed tests, and add
-                only the test cases you want to keep.
-              </p>
-            </div>
-
-            <label>
-              <span>Requirement</span>
-              <select
-                value={aiRequirement.id}
-                onChange={(event) =>
-                  setAiRequirementId(event.target.value)
-                }
-              >
-                {project.requirements.map((requirement) => (
-                  <option key={requirement.id} value={requirement.id}>
-                    {requirement.id} · {requirement.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <AIProjectTestGenerator
-            projectId={project.id}
-            requirement={aiRequirement}
-            onSaved={loadProject}
-          />
-        </section>
       )}
 
       <section className="project-setup__inventory">
