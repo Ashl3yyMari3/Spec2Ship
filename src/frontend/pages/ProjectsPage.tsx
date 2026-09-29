@@ -34,7 +34,22 @@ export default function ProjectsPage(): React.ReactElement {
   const [template, setTemplate] =
     useState<'blank' | 'shopsphere'>('blank');
   const [creating, setCreating] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  function resetCreateForm(): void {
+    setName('');
+    setShipKey('');
+    setDescription('');
+    setTemplate('blank');
+    setCreateError(null);
+  }
+
+  function closeCreatePanel(): void {
+    if (creating) return;
+    resetCreateForm();
+    setCreateOpen(false);
+  }
 
   function openProject(projectId: string): void {
     selectProject(projectId);
@@ -92,15 +107,189 @@ export default function ProjectsPage(): React.ReactElement {
 
   return (
     <>
-      <div className="page-header">
-        <p className="projects-page__eyebrow">Project Workspaces</p>
-        <h1 className="page-header__title">Projects</h1>
-        <p className="page-header__subtitle">
-          Create or open a QA workspace. Every project keeps its own
-          requirements, tests, traceability, risk, and release-readiness
-          results.
-        </p>
+      <div className="page-header projects-page__header">
+        <div>
+          <p className="projects-page__eyebrow">Project Workspaces</p>
+          <h1 className="page-header__title">Projects</h1>
+          <p className="page-header__subtitle">
+            Open a workspace to continue testing, or create a new one when
+            you are ready to bring another project into Spec2Ship.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className={
+            'projects-page__new-button' +
+            (createOpen ? ' projects-page__new-button--open' : '')
+          }
+          onClick={() => {
+            if (createOpen) {
+              closeCreatePanel();
+            } else {
+              setCreateOpen(true);
+              setCreateError(null);
+            }
+          }}
+          aria-expanded={createOpen}
+          aria-controls="new-workspace-panel"
+        >
+          <span aria-hidden="true">{createOpen ? '×' : '+'}</span>
+          {createOpen ? 'Close' : 'New Workspace'}
+        </button>
       </div>
+
+      {createOpen && (
+        <section
+          className="projects-create-drawer"
+          id="new-workspace-panel"
+        >
+          <div className="projects-create-drawer__header">
+            <div>
+              <p className="projects-panel__eyebrow">New Workspace</p>
+              <h2>Create Project</h2>
+              <p>
+                Choose a Ship Key once. Spec2Ship will use it to generate
+                requirement and test IDs automatically.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="projects-create-drawer__cancel"
+              onClick={closeCreatePanel}
+              disabled={creating}
+            >
+              Cancel
+            </button>
+          </div>
+
+          <form className="project-create-form" onSubmit={handleCreate}>
+            <div className="project-create-form__grid">
+              <label>
+                <span>Project name</span>
+                <input
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="e.g. SavoryStack API"
+                  maxLength={100}
+                  required
+                />
+              </label>
+
+              <label>
+                <span>Ship Key</span>
+                <input
+                  value={shipKey}
+                  onChange={(event) =>
+                    setShipKey(
+                      event.target.value
+                        .toUpperCase()
+                        .replace(/[^A-Z0-9]/g, '')
+                        .slice(0, 8),
+                    )
+                  }
+                  placeholder="e.g. SAV"
+                  minLength={2}
+                  maxLength={8}
+                  pattern="[A-Z][A-Z0-9]{1,7}"
+                  required
+                />
+                <small className="project-create-form__help">
+                  2–8 letters or numbers, starting with a letter.
+                </small>
+
+                {shipKey.length >= 2 && (
+                  <div className="project-create-form__id-preview">
+                    <span>
+                      Requirement → <strong>{shipKey}-1</strong>
+                    </span>
+                    <span>
+                      Test → <strong>{shipKey}-T1</strong>
+                    </span>
+                  </div>
+                )}
+              </label>
+            </div>
+
+            <label>
+              <span>Description</span>
+              <textarea
+                value={description}
+                onChange={(event) =>
+                  setDescription(event.target.value)
+                }
+                placeholder="What are you testing?"
+                rows={3}
+                maxLength={500}
+              />
+            </label>
+
+            <fieldset>
+              <legend>Starting point</legend>
+
+              <div className="project-create-form__templates">
+                <label className="project-template-option">
+                  <input
+                    type="radio"
+                    name="template"
+                    value="blank"
+                    checked={template === 'blank'}
+                    onChange={() => setTemplate('blank')}
+                  />
+                  <span>
+                    <strong>Blank Project</strong>
+                    Add your own requirements and tests next.
+                  </span>
+                </label>
+
+                <label className="project-template-option">
+                  <input
+                    type="radio"
+                    name="template"
+                    value="shopsphere"
+                    checked={template === 'shopsphere'}
+                    onChange={() => setTemplate('shopsphere')}
+                  />
+                  <span>
+                    <strong>Clone ShopSphere</strong>
+                    Start with demo evidence remapped to your Ship Key.
+                  </span>
+                </label>
+              </div>
+            </fieldset>
+
+            {createError && (
+              <div className="projects-create-error" role="alert">
+                {createError}
+              </div>
+            )}
+
+            <div className="project-create-form__actions">
+              <button
+                type="button"
+                className="project-create-cancel"
+                onClick={closeCreatePanel}
+                disabled={creating}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                className="project-create-submit"
+                disabled={
+                  creating ||
+                  !name.trim() ||
+                  !/^[A-Z][A-Z0-9]{1,7}$/.test(shipKey)
+                }
+              >
+                {creating ? 'Creating…' : 'Create & Open Project'}
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
 
       <div className="projects-layout">
         <section className="projects-panel">
@@ -171,7 +360,7 @@ export default function ProjectsPage(): React.ReactElement {
                     </span>
                     <span>
                       <strong>{project.testCount}</strong>
-                      Seeded Tests
+                      Test Cases
                     </span>
                   </div>
 
@@ -188,120 +377,6 @@ export default function ProjectsPage(): React.ReactElement {
           )}
         </section>
 
-        <section className="projects-panel projects-panel--create">
-          <p className="projects-panel__eyebrow">New Workspace</p>
-          <h2>Create Project</h2>
-          <p className="projects-panel__intro">
-            Start blank for your own application, or clone ShopSphere
-            to experiment without changing the built-in demo.
-          </p>
-
-          <form className="project-create-form" onSubmit={handleCreate}>
-            <label>
-              <span>Project name</span>
-              <input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="e.g. SavoryStack API"
-                maxLength={100}
-                required
-              />
-            </label>
-
-            <label>
-              <span>Ship Key</span>
-              <input
-                value={shipKey}
-                onChange={(event) =>
-                  setShipKey(
-                    event.target.value
-                      .toUpperCase()
-                      .replace(/[^A-Z0-9]/g, '')
-                      .slice(0, 8),
-                  )
-                }
-                placeholder="e.g. SAV"
-                minLength={2}
-                maxLength={8}
-                pattern="[A-Z][A-Z0-9]{1,7}"
-                required
-              />
-              <small className="project-create-form__help">
-                Choose this once. Spec2Ship will build IDs from it automatically.
-              </small>
-
-              {shipKey.length >= 2 && (
-                <div className="project-create-form__id-preview">
-                  <span>Requirement → <strong>{shipKey}-1</strong></span>
-                  <span>Test → <strong>{shipKey}-T1</strong></span>
-                </div>
-              )}
-            </label>
-
-            <label>
-              <span>Description</span>
-              <textarea
-                value={description}
-                onChange={(event) =>
-                  setDescription(event.target.value)
-                }
-                placeholder="What are you testing?"
-                rows={4}
-                maxLength={500}
-              />
-            </label>
-
-            <fieldset>
-              <legend>Starting point</legend>
-
-              <label className="project-template-option">
-                <input
-                  type="radio"
-                  name="template"
-                  value="blank"
-                  checked={template === 'blank'}
-                  onChange={() => setTemplate('blank')}
-                />
-                <span>
-                  <strong>Blank Project</strong>
-                  Add your own requirements and tests next.
-                </span>
-              </label>
-
-              <label className="project-template-option">
-                <input
-                  type="radio"
-                  name="template"
-                  value="shopsphere"
-                  checked={template === 'shopsphere'}
-                  onChange={() => setTemplate('shopsphere')}
-                />
-                <span>
-                  <strong>Clone ShopSphere</strong>
-                  Copy the demo requirements, tests, and traceability.
-                </span>
-              </label>
-            </fieldset>
-
-            {createError && (
-              <div className="projects-create-error" role="alert">
-                {createError}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="project-create-submit"
-              disabled={
-                creating ||
-                !name.trim() ||
-                !/^[A-Z][A-Z0-9]{1,7}$/.test(shipKey)
-              }
-            >
-              {creating ? 'Creating…' : 'Create & Open Project'}
-            </button>
-          </form>
-        </section>
       </div>
     </>
   );
