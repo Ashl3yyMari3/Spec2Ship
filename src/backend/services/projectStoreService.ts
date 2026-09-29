@@ -247,6 +247,94 @@ export function shipKeyInUse(
   );
 }
 
+function cloneDemoDataForShipKey(
+  shipKey: string,
+): Pick<
+  ProjectWorkspace,
+  'requirements' | 'seededTests' | 'traceabilityLinks'
+> {
+  const demo = demoProject as ProjectWorkspace;
+
+  const requirementIdMap = new Map<string, string>();
+  const testIdMap = new Map<string, string>();
+
+  const requirements = demo.requirements.map(
+    (requirement, index) => {
+      const id = `${shipKey}-${index + 1}`;
+      requirementIdMap.set(requirement.id, id);
+
+      return {
+        ...clone(requirement),
+        id,
+        sourceFile: `template:shopsphere`,
+      };
+    },
+  );
+
+  const seededTests = demo.seededTests.map(
+    (testCase, index) => {
+      const id = `${shipKey}-T${index + 1}`;
+      testIdMap.set(testCase.id, id);
+
+      return {
+        ...clone(testCase),
+        id,
+        requirementIds: testCase.requirementIds
+          .map((requirementId) =>
+            requirementIdMap.get(requirementId),
+          )
+          .filter((value): value is string => Boolean(value)),
+        acceptanceCriteriaRefs:
+          testCase.acceptanceCriteriaRefs
+            .map((reference) => {
+              const requirementId =
+                requirementIdMap.get(reference.requirementId);
+
+              if (!requirementId) return null;
+
+              return {
+                ...reference,
+                requirementId,
+              };
+            })
+            .filter(
+              (
+                value,
+              ): value is NonNullable<typeof value> =>
+                value !== null,
+            ),
+      };
+    },
+  );
+
+  const traceabilityLinks = demo.traceabilityLinks
+    .map((link) => {
+      const requirementId =
+        requirementIdMap.get(link.requirementId);
+      const testCaseId = testIdMap.get(link.testCaseId);
+
+      if (!requirementId || !testCaseId) return null;
+
+      return {
+        ...clone(link),
+        requirementId,
+        testCaseId,
+      };
+    })
+    .filter(
+      (
+        value,
+      ): value is NonNullable<typeof value> =>
+        value !== null,
+    );
+
+  return {
+    requirements,
+    seededTests,
+    traceabilityLinks,
+  };
+}
+
 export function createProject(input: {
   name: string;
   shipKey: string;
@@ -271,6 +359,13 @@ export function createProject(input: {
 
   const now = new Date().toISOString();
   const useDemo = input.template === 'shopsphere';
+  const templateData = useDemo
+    ? cloneDemoDataForShipKey(shipKey)
+    : {
+        requirements: [],
+        seededTests: [],
+        traceabilityLinks: [],
+      };
 
   const project: ProjectWorkspace = {
     id: safeId(input.name),
@@ -280,15 +375,7 @@ export function createProject(input: {
     createdAt: now,
     updatedAt: now,
     isDemo: false,
-    requirements: useDemo
-      ? clone((demoProject as ProjectWorkspace).requirements)
-      : [],
-    seededTests: useDemo
-      ? clone((demoProject as ProjectWorkspace).seededTests)
-      : [],
-    traceabilityLinks: useDemo
-      ? clone((demoProject as ProjectWorkspace).traceabilityLinks)
-      : [],
+    ...templateData,
   };
 
   customProjects.set(project.id, project);
