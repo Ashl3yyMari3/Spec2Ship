@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useProject } from '../context/ProjectContext';
 
 interface ApiState<T> {
   data: T | null;
@@ -11,6 +12,9 @@ interface ApiState<T> {
  * Uses the Vite dev proxy (target: http://localhost:3001).
  */
 export function useApi<T>(url: string): ApiState<T> {
+  const { projectApiUrl, selectedProjectId } = useProject();
+  const scopedUrl = projectApiUrl(url);
+
   const [state, setState] = useState<ApiState<T>>({
     data: null,
     loading: true,
@@ -22,7 +26,7 @@ export function useApi<T>(url: string): ApiState<T> {
 
     setState({ data: null, loading: true, error: null });
 
-    fetch(url)
+    fetch(scopedUrl)
       .then((res) => {
         if (!res.ok) {
           throw new Error(`Request failed: ${res.status} ${res.statusText}`);
@@ -45,7 +49,7 @@ export function useApi<T>(url: string): ApiState<T> {
     return () => {
       cancelled = true;
     };
-  }, [url]);
+  }, [url, scopedUrl, selectedProjectId]);
 
   return state;
 }
