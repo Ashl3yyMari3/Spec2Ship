@@ -35,7 +35,7 @@ export default function ProjectsPage(): React.ReactElement {
 
   function openProject(projectId: string): void {
     selectProject(projectId);
-    navigate('/risk');
+    navigate('/project/setup');
   }
 
   async function handleCreate(
