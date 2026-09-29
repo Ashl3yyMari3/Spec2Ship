@@ -11,6 +11,7 @@ import ReportPage from './pages/ReportPage';
 import CopilotPage from './pages/CopilotPage';
 import ProjectsPage from './pages/ProjectsPage';
 import ProjectSetupPage from './pages/ProjectSetupPage';
+import AutomationCenterPage from './pages/AutomationCenterPage';
 import { ProjectProvider } from './context/ProjectContext';
 
 export default function App(): React.ReactElement {
@@ -35,6 +36,7 @@ export default function App(): React.ReactElement {
           <Route path="/ai" element={<CopilotPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/project/setup" element={<ProjectSetupPage />} />
+          <Route path="/automation" element={<AutomationCenterPage />} />
         </Route>
       </Routes>
       </BrowserRouter>
