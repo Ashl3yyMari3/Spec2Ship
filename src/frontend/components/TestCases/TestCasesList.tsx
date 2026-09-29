@@ -148,6 +148,54 @@ export default function TestCasesList({ tests }: Props): React.ReactElement {
               </div>
             )}
 
+            {tc.automation && (
+              <div>
+                <dt
+                  style={{
+                    fontWeight: 700,
+                    fontSize: '10px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.07em',
+                    color: 'var(--text-muted)',
+                    marginBottom: '6px',
+                  }}
+                >
+                  Automation Source
+                </dt>
+                <dd
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                    alignItems: 'center',
+                  }}
+                >
+                  <span className="badge badge--type">
+                    {tc.automation.framework.charAt(0).toUpperCase() +
+                      tc.automation.framework.slice(1)}
+                  </span>
+                  {tc.automation.sourceFile && (
+                    <span
+                      className="badge badge--type"
+                      style={{ fontFamily: 'monospace' }}
+                    >
+                      {tc.automation.sourceFile}
+                    </span>
+                  )}
+                  {tc.automation.projectName && (
+                    <span className="badge badge--type">
+                      {tc.automation.projectName}
+                    </span>
+                  )}
+                  {typeof tc.automation.durationMs === 'number' && (
+                    <span className="badge badge--type">
+                      {tc.automation.durationMs} ms
+                    </span>
+                  )}
+                </dd>
+              </div>
+            )}
+
             {tc.notes && (
               <div>
                 <dt
