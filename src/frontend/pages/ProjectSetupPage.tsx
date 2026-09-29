@@ -310,6 +310,7 @@ export default function ProjectSetupPage(): React.ReactElement {
           <Link to="/risk">Risk Dashboard</Link>
           <Link to="/report">Release Readiness</Link>
           <Link to="/ai">Spec2Ship AI</Link>
+          <Link to="/automation">Automation Center</Link>
         </div>
       </div>
 
@@ -660,6 +661,13 @@ export default function ProjectSetupPage(): React.ReactElement {
                   requirement={aiRequirement}
                   onSaved={loadProject}
                 />
+
+                <div className="project-setup__automation-link">
+                  <span>Already have automated tests?</span>
+                  <Link to="/automation">
+                    ⚡ Import Playwright Results
+                  </Link>
+                </div>
               </div>
             )}
           </section>
