@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Requirement, Criticality } from '@backend/types/models';
+import AIRequirementAnalysis from './AIRequirementAnalysis';
 
 interface Props {
   requirements: Requirement[];
@@ -85,6 +86,7 @@ export default function RequirementsList({ requirements }: Props): React.ReactEl
               </ol>
             </div>
           )}
+          <AIRequirementAnalysis requirement={req} />
         </article>
       ))}
     </section>

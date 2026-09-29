@@ -27,6 +27,7 @@ import { computeCoverageGaps } from './services/coverageService.js';
 import { computeImpact } from './services/impactService.js';
 import { computeAllRiskScores } from './services/riskService.js';
 import { buildReleaseReadinessReport } from './services/reportService.js';
+import { analyzeRequirement } from './services/aiRequirementService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -113,6 +114,61 @@ export function createApp(): express.Express {
   app.get('/api/test-suggestions', (_req, res) => {
     res.json(suggestions);
   });
+
+
+// ------------------------------------------------------------------
+// POST /api/ai/analyze-requirement
+// ------------------------------------------------------------------
+
+app.post('/api/ai/analyze-requirement', async (req, res) => {
+  const { requirement, acceptanceCriteria } = req.body;
+
+  if (
+    typeof requirement !== 'string' ||
+    !requirement.trim() ||
+    !Array.isArray(acceptanceCriteria) ||
+    !acceptanceCriteria.every(
+      (criterion) => typeof criterion === 'string',
+    )
+  ) {
+    res.status(400).json({
+      error:
+        'A requirement and an array of acceptance criteria are required.',
+    });
+
+    return;
+  }
+
+  if (
+    requirement.length > 5000 ||
+    acceptanceCriteria.length > 25 ||
+    acceptanceCriteria.some(
+      (criterion) => criterion.length > 1500,
+    )
+  ) {
+    res.status(400).json({
+      error: 'Requirement analysis input exceeds allowed limits.',
+    });
+
+    return;
+  }
+
+  try {
+    const analysis = await analyzeRequirement(
+      requirement.trim(),
+      acceptanceCriteria,
+    );
+
+    res.json(analysis);
+  } catch (error) {
+    console.error('AI requirement analysis failed:', error);
+
+    res.status(500).json({
+      error: 'AI requirement analysis failed.',
+    });
+  }
+});
+
 
   // ------------------------------------------------------------------
   // GET /api/traceability
