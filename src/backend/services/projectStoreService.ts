@@ -9,6 +9,7 @@ import type {
 export interface ProjectSummary {
   id: string;
   name: string;
+  shipKey: string;
   description: string;
   createdAt: string;
   updatedAt: string;
@@ -20,6 +21,7 @@ export interface ProjectSummary {
 export interface ProjectWorkspace {
   id: string;
   name: string;
+  shipKey: string;
   description: string;
   createdAt: string;
   updatedAt: string;
@@ -58,6 +60,59 @@ function safeId(name: string): string {
   return `${slug}-${Date.now().toString(36)}`;
 }
 
+export function normalizeShipKey(value: string): string {
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 8);
+}
+
+export function isValidShipKey(value: string): boolean {
+  return /^[A-Z][A-Z0-9]{1,7}$/.test(normalizeShipKey(value));
+}
+
+function deriveLegacyShipKey(name: string): string {
+  const words = name
+    .toUpperCase()
+    .split(/[^A-Z0-9]+/)
+    .filter(Boolean);
+
+  const initials = words
+    .map((word) => word[0])
+    .join('')
+    .slice(0, 4);
+
+  if (initials.length >= 2) return initials;
+
+  const compact = name
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 4);
+
+  if (/^[A-Z][A-Z0-9]{1,7}$/.test(compact)) {
+    return compact;
+  }
+
+  return 'PRJ';
+}
+
+function migrateStoredProject(
+  project: ProjectWorkspace,
+): ProjectWorkspace {
+  if (project.shipKey && isValidShipKey(project.shipKey)) {
+    return {
+      ...project,
+      shipKey: normalizeShipKey(project.shipKey),
+    };
+  }
+
+  return {
+    ...project,
+    shipKey: deriveLegacyShipKey(project.name),
+  };
+}
+
 function loadCustomProjects(): void {
   customProjects = new Map();
 
@@ -67,8 +122,20 @@ function loadCustomProjects(): void {
     fs.readFileSync(STORE_FILE, 'utf8'),
   ) as StoredProjectsFile;
 
-  for (const project of parsed.projects ?? []) {
+  let migrated = false;
+
+  for (const rawProject of parsed.projects ?? []) {
+    const project = migrateStoredProject(rawProject);
+
+    if (project.shipKey !== rawProject.shipKey) {
+      migrated = true;
+    }
+
     customProjects.set(project.id, project);
+  }
+
+  if (migrated) {
+    persistCustomProjects();
   }
 }
 
@@ -98,6 +165,7 @@ export function initializeProjectStore(input: {
   demoProject = {
     id: 'shopsphere-demo',
     name: 'ShopSphere Demo',
+    shipKey: 'SHOP',
     description:
       'Built-in Spec2Ship sample project for authentication QA and release-readiness analysis.',
     createdAt: now,
@@ -122,6 +190,7 @@ function summary(project: ProjectWorkspace): ProjectSummary {
   return {
     id: project.id,
     name: project.name,
+    shipKey: project.shipKey,
     description: project.description,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
@@ -155,12 +224,50 @@ export function getProject(
   return project ? clone(project) : null;
 }
 
+export function shipKeyInUse(
+  shipKey: string,
+  exceptProjectId?: string,
+): boolean {
+  requireInitialized();
+
+  const canonical = normalizeShipKey(shipKey);
+
+  if (
+    demoProject &&
+    demoProject.id !== exceptProjectId &&
+    demoProject.shipKey === canonical
+  ) {
+    return true;
+  }
+
+  return [...customProjects.values()].some(
+    (project) =>
+      project.id !== exceptProjectId &&
+      project.shipKey === canonical,
+  );
+}
+
 export function createProject(input: {
   name: string;
+  shipKey: string;
   description?: string;
   template?: 'blank' | 'shopsphere';
 }): ProjectWorkspace {
   requireInitialized();
+
+  const shipKey = normalizeShipKey(input.shipKey);
+
+  if (!isValidShipKey(shipKey)) {
+    throw new Error(
+      'Ship Key must be 2–8 characters, start with a letter, and contain only letters or numbers.',
+    );
+  }
+
+  if (shipKeyInUse(shipKey)) {
+    throw new Error(
+      `Ship Key ${shipKey} is already used by another project.`,
+    );
+  }
 
   const now = new Date().toISOString();
   const useDemo = input.template === 'shopsphere';
@@ -168,6 +275,7 @@ export function createProject(input: {
   const project: ProjectWorkspace = {
     id: safeId(input.name),
     name: input.name.trim(),
+    shipKey,
     description: input.description?.trim() ?? '',
     createdAt: now,
     updatedAt: now,
@@ -189,6 +297,59 @@ export function createProject(input: {
   return clone(project);
 }
 
+function nextNumber(
+  ids: string[],
+  pattern: RegExp,
+): number {
+  let max = 0;
+
+  for (const id of ids) {
+    const match = id.toUpperCase().match(pattern);
+
+    if (!match) continue;
+
+    const parsed = Number(match[1]);
+
+    if (Number.isFinite(parsed)) {
+      max = Math.max(max, parsed);
+    }
+  }
+
+  return max + 1;
+}
+
+export function nextRequirementId(
+  project: ProjectWorkspace,
+): string {
+  const key = normalizeShipKey(project.shipKey);
+  const pattern = new RegExp(`^${key}-(\\d+)$`, 'i');
+
+  const sequence = nextNumber(
+    project.requirements.map((requirement) => requirement.id),
+    pattern,
+  );
+
+  return `${key}-${sequence}`;
+}
+
+export function nextTestCaseIds(
+  project: ProjectWorkspace,
+  count = 1,
+): string[] {
+  const key = normalizeShipKey(project.shipKey);
+  const pattern = new RegExp(`^${key}-T(\\d+)$`, 'i');
+
+  const start = nextNumber(
+    project.seededTests.map((testCase) => testCase.id),
+    pattern,
+  );
+
+  return Array.from(
+    { length: count },
+    (_, index) => `${key}-T${start + index}`,
+  );
+}
+
 export function saveProject(
   project: ProjectWorkspace,
 ): ProjectWorkspace {
@@ -200,6 +361,7 @@ export function saveProject(
 
   const next: ProjectWorkspace = {
     ...clone(project),
+    shipKey: normalizeShipKey(project.shipKey),
     updatedAt: new Date().toISOString(),
     isDemo: false,
   };
