@@ -9,6 +9,15 @@ interface NavItem {
 
 // --- Inline SVG icons for each nav item ---
 
+const IconProjects = (
+  <svg className="sidebar__icon" viewBox="0 0 18 18" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2.5" y="4" width="13" height="10.5" rx="2" stroke="currentColor" strokeWidth="1.4"/>
+    <path d="M5 4V2.8h4l1.2 1.2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M5.5 8h7M5.5 11h4.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+  </svg>
+);
+
+
 const IconRequirements = (
   <svg className="sidebar__icon" viewBox="0 0 18 18" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
     <rect x="3" y="2" width="12" height="14" rx="2" stroke="currentColor" strokeWidth="1.4"/>
@@ -75,6 +84,7 @@ const IconAI = (
 );
 
 const NAV_ITEMS: NavItem[] = [
+  { label: 'Projects',         to: '/projects',      icon: IconProjects },
   { label: 'Requirements',     to: '/requirements',  icon: IconRequirements },
   { label: 'Test Cases',       to: '/tests',         icon: IconTestCases },
   { label: 'Traceability',     to: '/traceability',  icon: IconTraceability },
