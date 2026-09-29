@@ -74,7 +74,7 @@ export default function ProjectsPage(): React.ReactElement {
       }
 
       selectProject(payload.id);
-      navigate('/risk');
+      navigate('/project/setup');
     } catch (err) {
       setCreateError(
         err instanceof Error
