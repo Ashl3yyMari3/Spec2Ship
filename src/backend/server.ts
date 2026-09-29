@@ -116,44 +116,59 @@ export function createApp(): express.Express {
   });
 
 
-  // ------------------------------------------------------------------
-  // POST /api/ai/analyze-requirement
-  // ------------------------------------------------------------------
+// ------------------------------------------------------------------
+// POST /api/ai/analyze-requirement
+// ------------------------------------------------------------------
 
-  app.post('/api/ai/analyze-requirement', async (req, res) => {
-    const { requirement, acceptanceCriteria } = req.body;
+app.post('/api/ai/analyze-requirement', async (req, res) => {
+  const { requirement, acceptanceCriteria } = req.body;
 
-    if (
-      typeof requirement !== 'string' ||
-      !requirement.trim() ||
-      !Array.isArray(acceptanceCriteria) ||
-      !acceptanceCriteria.every(
-        (criterion) => typeof criterion === 'string',
-      )
-    ) {
-      res.status(400).json({
-        error:
-          'A requirement and an array of acceptance criteria are required.',
-      });
+  if (
+    typeof requirement !== 'string' ||
+    !requirement.trim() ||
+    !Array.isArray(acceptanceCriteria) ||
+    !acceptanceCriteria.every(
+      (criterion) => typeof criterion === 'string',
+    )
+  ) {
+    res.status(400).json({
+      error:
+        'A requirement and an array of acceptance criteria are required.',
+    });
 
-      return;
-    }
+    return;
+  }
 
-    try {
-      const analysis = await analyzeRequirement(
-        requirement.trim(),
-        acceptanceCriteria,
-      );
+  if (
+    requirement.length > 5000 ||
+    acceptanceCriteria.length > 25 ||
+    acceptanceCriteria.some(
+      (criterion) => criterion.length > 1500,
+    )
+  ) {
+    res.status(400).json({
+      error: 'Requirement analysis input exceeds allowed limits.',
+    });
 
-      res.json(analysis);
-    } catch (error) {
-      console.error('AI requirement analysis failed:', error);
+    return;
+  }
 
-      res.status(500).json({
-        error: 'AI requirement analysis failed.',
-      });
-    }
-  });
+  try {
+    const analysis = await analyzeRequirement(
+      requirement.trim(),
+      acceptanceCriteria,
+    );
+
+    res.json(analysis);
+  } catch (error) {
+    console.error('AI requirement analysis failed:', error);
+
+    res.status(500).json({
+      error: 'AI requirement analysis failed.',
+    });
+  }
+});
+
 
   // ------------------------------------------------------------------
   // GET /api/traceability
