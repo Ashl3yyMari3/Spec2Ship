@@ -123,14 +123,36 @@ function loadCustomProjects(): void {
   ) as StoredProjectsFile;
 
   let migrated = false;
+  const usedKeys = new Set<string>(['SHOP']);
 
   for (const rawProject of parsed.projects ?? []) {
-    const project = migrateStoredProject(rawProject);
+    let project = migrateStoredProject(rawProject);
+    let candidate = project.shipKey;
+    let suffix = 2;
 
-    if (project.shipKey !== rawProject.shipKey) {
+    while (usedKeys.has(candidate)) {
+      const base = project.shipKey.slice(
+        0,
+        Math.max(2, 8 - String(suffix).length),
+      );
+
+      candidate = `${base}${suffix}`;
+      suffix += 1;
+    }
+
+    if (
+      candidate !== rawProject.shipKey ||
+      project.shipKey !== rawProject.shipKey
+    ) {
       migrated = true;
     }
 
+    project = {
+      ...project,
+      shipKey: candidate,
+    };
+
+    usedKeys.add(candidate);
     customProjects.set(project.id, project);
   }
 
