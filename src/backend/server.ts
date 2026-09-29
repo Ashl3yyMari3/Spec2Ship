@@ -383,10 +383,10 @@ export function createApp(): express.Express {
     if (
       !Array.isArray(tests) ||
       tests.length === 0 ||
-      tests.length > 20
+      tests.length > 200
     ) {
       res.status(400).json({
-        error: 'A batch of 1 to 20 test cases is required.',
+        error: 'A batch of 1 to 200 test cases is required.',
       });
       return;
     }
@@ -433,7 +433,13 @@ export function createApp(): express.Express {
         !validStatuses.includes(test.status ?? 'not_run') ||
         typeof (test.automated ?? false) !== 'boolean' ||
         (test.coverageType !== 'full' &&
-          test.coverageType !== 'partial')
+          test.coverageType !== 'partial') ||
+        (test.automation !== undefined &&
+          (!test.automation ||
+            typeof test.automation !== 'object' ||
+            !['playwright', 'selenium', 'cypress', 'appium', 'other'].includes(
+              test.automation.framework,
+            )))
       ) {
         res.status(400).json({
           error:
@@ -460,6 +466,28 @@ export function createApp(): express.Express {
           typeof test.notes === 'string'
             ? test.notes.trim()
             : 'AI-generated suggestion reviewed and added in Project Setup.',
+        automation:
+          test.automation && typeof test.automation === 'object'
+            ? {
+                framework: test.automation.framework,
+                sourceFile:
+                  typeof test.automation.sourceFile === 'string'
+                    ? test.automation.sourceFile
+                    : undefined,
+                projectName:
+                  typeof test.automation.projectName === 'string'
+                    ? test.automation.projectName
+                    : undefined,
+                durationMs:
+                  typeof test.automation.durationMs === 'number'
+                    ? test.automation.durationMs
+                    : undefined,
+                importedAt:
+                  typeof test.automation.importedAt === 'string'
+                    ? test.automation.importedAt
+                    : new Date().toISOString(),
+              }
+            : undefined,
       });
 
       project.traceabilityLinks.push({
