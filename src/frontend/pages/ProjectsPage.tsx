@@ -7,6 +7,7 @@ import '../styles/projects.css';
 interface ProjectSummary {
   id: string;
   name: string;
+  shipKey: string;
   description: string;
   createdAt: string;
   updatedAt: string;
@@ -18,6 +19,7 @@ interface ProjectSummary {
 interface CreatedProject {
   id: string;
   name: string;
+  shipKey: string;
 }
 
 export default function ProjectsPage(): React.ReactElement {
@@ -27,6 +29,7 @@ export default function ProjectsPage(): React.ReactElement {
   const { selectedProjectId, selectProject } = useProject();
 
   const [name, setName] = useState('');
+  const [shipKey, setShipKey] = useState('');
   const [description, setDescription] = useState('');
   const [template, setTemplate] =
     useState<'blank' | 'shopsphere'>('blank');
@@ -43,7 +46,7 @@ export default function ProjectsPage(): React.ReactElement {
   ): Promise<void> {
     event.preventDefault();
 
-    if (!name.trim() || creating) return;
+    if (!name.trim() || !shipKey.trim() || creating) return;
 
     setCreating(true);
     setCreateError(null);
@@ -56,6 +59,7 @@ export default function ProjectsPage(): React.ReactElement {
         },
         body: JSON.stringify({
           name: name.trim(),
+          shipKey: shipKey.trim().toUpperCase(),
           description: description.trim(),
           template,
         }),
@@ -152,7 +156,10 @@ export default function ProjectsPage(): React.ReactElement {
                     )}
                   </div>
 
-                  <h3>{project.name}</h3>
+                  <div className="project-card__identity">
+                    <h3>{project.name}</h3>
+                    <code>{project.shipKey}</code>
+                  </div>
                   <p className="project-card__description">
                     {project.description || 'No description yet.'}
                   </p>
@@ -199,6 +206,36 @@ export default function ProjectsPage(): React.ReactElement {
                 maxLength={100}
                 required
               />
+            </label>
+
+            <label>
+              <span>Ship Key</span>
+              <input
+                value={shipKey}
+                onChange={(event) =>
+                  setShipKey(
+                    event.target.value
+                      .toUpperCase()
+                      .replace(/[^A-Z0-9]/g, '')
+                      .slice(0, 8),
+                  )
+                }
+                placeholder="e.g. SAV"
+                minLength={2}
+                maxLength={8}
+                pattern="[A-Z][A-Z0-9]{1,7}"
+                required
+              />
+              <small className="project-create-form__help">
+                Choose this once. Spec2Ship will build IDs from it automatically.
+              </small>
+
+              {shipKey.length >= 2 && (
+                <div className="project-create-form__id-preview">
+                  <span>Requirement → <strong>{shipKey}-1</strong></span>
+                  <span>Test → <strong>{shipKey}-T1</strong></span>
+                </div>
+              )}
             </label>
 
             <label>
@@ -255,7 +292,11 @@ export default function ProjectsPage(): React.ReactElement {
             <button
               type="submit"
               className="project-create-submit"
-              disabled={creating || !name.trim()}
+              disabled={
+                creating ||
+                !name.trim() ||
+                !/^[A-Z][A-Z0-9]{1,7}$/.test(shipKey)
+              }
             >
               {creating ? 'Creating…' : 'Create & Open Project'}
             </button>
