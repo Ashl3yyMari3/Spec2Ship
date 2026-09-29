@@ -15,6 +15,7 @@ import '../styles/project-setup.css';
 interface ProjectWorkspace {
   id: string;
   name: string;
+  shipKey: string;
   description: string;
   createdAt: string;
   updatedAt: string;
@@ -53,7 +54,6 @@ export default function ProjectSetupPage(): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
 
-  const [reqId, setReqId] = useState('');
   const [reqTitle, setReqTitle] = useState('');
   const [reqDescription, setReqDescription] = useState('');
   const [reqAcceptance, setReqAcceptance] = useState('');
@@ -65,7 +65,6 @@ export default function ProjectSetupPage(): React.ReactElement {
   const [requirementError, setRequirementError] =
     useState<string | null>(null);
 
-  const [testId, setTestId] = useState('');
   const [testTitle, setTestTitle] = useState('');
   const [testDescription, setTestDescription] = useState('');
   const [testType, setTestType] =
@@ -166,7 +165,6 @@ export default function ProjectSetupPage(): React.ReactElement {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            id: reqId.trim().toUpperCase(),
             title: reqTitle.trim(),
             description: reqDescription.trim(),
             acceptanceCriteria,
@@ -187,7 +185,6 @@ export default function ProjectSetupPage(): React.ReactElement {
         );
       }
 
-      setReqId('');
       setReqTitle('');
       setReqDescription('');
       setReqAcceptance('');
@@ -232,7 +229,6 @@ export default function ProjectSetupPage(): React.ReactElement {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            id: testId.trim().toUpperCase(),
             title: testTitle.trim(),
             description: testDescription.trim(),
             type: testType,
@@ -255,7 +251,6 @@ export default function ProjectSetupPage(): React.ReactElement {
         );
       }
 
-      setTestId('');
       setTestTitle('');
       setTestDescription('');
       setTestType('functional');
@@ -298,7 +293,12 @@ export default function ProjectSetupPage(): React.ReactElement {
           <p className="project-setup__eyebrow">
             {project.isDemo ? 'Built-in Demo' : 'Project Workspace'}
           </p>
-          <h1 className="page-header__title">{project.name}</h1>
+          <div className="project-setup__title-row">
+            <h1 className="page-header__title">{project.name}</h1>
+            <code className="project-setup__ship-key">
+              Ship Key · {project.shipKey}
+            </code>
+          </div>
           <p className="page-header__subtitle">
             {project.description ||
               'Add requirements and tests, then let Spec2Ship calculate the QA evidence.'}
@@ -353,23 +353,13 @@ export default function ProjectSetupPage(): React.ReactElement {
 
             <form onSubmit={handleAddRequirement}>
               <div className="project-setup__row">
-                <label>
-                  <span>Requirement ID (unique)</span>
-                  <input
-                    value={reqId}
-                    onChange={(event) => setReqId(event.target.value)}
-                    placeholder="REQ-AUTH-001"
-                    aria-describedby="requirement-id-help"
-                    required
-                  />
-                  <small
-                    id="requirement-id-help"
-                    className="project-setup__field-help"
-                  >
-                    Use one ID per requirement, for example REQ-AUTH-001.
-                    Spec2Ship blocks duplicates automatically.
+                <div className="project-setup__auto-id">
+                  <span>Requirement ID</span>
+                  <strong>{project.shipKey}-#</strong>
+                  <small>
+                    Spec2Ship assigns the next number automatically when you save.
                   </small>
-                </label>
+                </div>
 
                 <label>
                   <span>Criticality</span>
@@ -483,23 +473,13 @@ export default function ProjectSetupPage(): React.ReactElement {
             ) : (
               <form onSubmit={handleAddTest}>
                 <div className="project-setup__row">
-                  <label>
-                    <span>Test Case ID (unique)</span>
-                    <input
-                      value={testId}
-                      onChange={(event) => setTestId(event.target.value)}
-                      placeholder="TC-AUTH-001-01"
-                      aria-describedby="test-case-id-help"
-                      required
-                    />
-                    <small
-                      id="test-case-id-help"
-                      className="project-setup__field-help"
-                    >
-                      Manual tests need a unique ID. AI-generated tests get
-                      the next available ID automatically.
+                  <div className="project-setup__auto-id">
+                    <span>Test Case ID</span>
+                    <strong>{project.shipKey}-T#</strong>
+                    <small>
+                      Manual, AI, and automation tests all use this same sequence.
                     </small>
-                  </label>
+                  </div>
 
                   <label>
                     <span>Linked Requirement</span>
