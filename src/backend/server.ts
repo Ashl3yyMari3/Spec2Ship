@@ -662,7 +662,7 @@ export function createApp(): express.Express {
     ];
 
     project.seededTests.push({
-      id: id.trim(),
+      id: normalizedId(id),
       title: title.trim(),
       description: description.trim(),
       type,
@@ -677,7 +677,7 @@ export function createApp(): express.Express {
     for (const requirementId of normalizedRequirementIds) {
       project.traceabilityLinks.push({
         requirementId,
-        testCaseId: id.trim(),
+        testCaseId: normalizedId(id),
         coverageType,
         notes:
           'Linked through Spec2Ship Project Setup.',
