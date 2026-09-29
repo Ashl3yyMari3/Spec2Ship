@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { Requirement } from '@backend/types/models';
+import { useProject } from '../../context/ProjectContext';
 
 interface Props {
   requirement: Requirement;
@@ -23,6 +24,7 @@ interface AIAnalysis {
 export default function AIRequirementAnalysis({
   requirement,
 }: Props): React.ReactElement {
+  const { projectApiUrl } = useProject();
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export default function AIRequirementAnalysis({
     setError(null);
 
     try {
-      const response = await fetch('/api/ai/analyze-requirement', {
+      const response = await fetch(projectApiUrl('/api/ai/analyze-requirement'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
