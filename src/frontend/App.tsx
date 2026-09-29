@@ -8,6 +8,7 @@ import CoverageGapsPage from './pages/CoverageGapsPage';
 import ImpactPage from './pages/ImpactPage';
 import RiskPage from './pages/RiskPage';
 import ReportPage from './pages/ReportPage';
+import CopilotPage from './pages/CopilotPage';
 
 export default function App(): React.ReactElement {
   return (
@@ -27,6 +28,7 @@ export default function App(): React.ReactElement {
           <Route path="/impact" element={<ImpactPage />} />
           <Route path="/risk" element={<RiskPage />} />
           <Route path="/report" element={<ReportPage />} />
+          <Route path="/ai" element={<CopilotPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
