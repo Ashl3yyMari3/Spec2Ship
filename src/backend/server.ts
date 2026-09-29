@@ -34,6 +34,7 @@ import {
   getProject,
   initializeProjectStore,
   listProjects,
+  saveProject,
   type ProjectWorkspace,
 } from './services/projectStoreService.js';
 import type {
@@ -197,6 +198,212 @@ export function createApp(): express.Express {
     }
 
     res.json(project);
+  });
+
+
+  app.post('/api/projects/:projectId/requirements', (req, res) => {
+    const project = getProject(req.params.projectId);
+
+    if (!project) {
+      sendMissingProject(res);
+      return;
+    }
+
+    if (project.isDemo) {
+      res.status(403).json({
+        error: 'The built-in demo project is read-only.',
+      });
+      return;
+    }
+
+    const {
+      id,
+      title,
+      description,
+      acceptanceCriteria,
+      domain = 'general',
+      criticality = 'medium',
+      tags = [],
+      changed = false,
+    } = req.body ?? {};
+
+    const validCriticality = [
+      'low',
+      'medium',
+      'high',
+      'critical',
+    ].includes(criticality);
+
+    if (
+      typeof id !== 'string' ||
+      !isValidRequirementId(id) ||
+      typeof title !== 'string' ||
+      !title.trim() ||
+      typeof description !== 'string' ||
+      !description.trim() ||
+      !Array.isArray(acceptanceCriteria) ||
+      acceptanceCriteria.length === 0 ||
+      acceptanceCriteria.length > 25 ||
+      !acceptanceCriteria.every(
+        (criterion) =>
+          typeof criterion === 'string' &&
+          criterion.trim().length > 0 &&
+          criterion.length <= 1500,
+      ) ||
+      typeof domain !== 'string' ||
+      domain.length > 80 ||
+      !validCriticality ||
+      !Array.isArray(tags) ||
+      !tags.every((tag) => typeof tag === 'string') ||
+      typeof changed !== 'boolean'
+    ) {
+      res.status(400).json({
+        error: 'Requirement data is invalid.',
+      });
+      return;
+    }
+
+    if (
+      project.requirements.some(
+        (requirement) => requirement.id === id.trim(),
+      )
+    ) {
+      res.status(409).json({
+        error: `Requirement ${id.trim()} already exists.`,
+      });
+      return;
+    }
+
+    project.requirements.push({
+      id: id.trim(),
+      title: title.trim(),
+      description: description.trim(),
+      acceptanceCriteria: acceptanceCriteria.map(
+        (criterion: string) => criterion.trim(),
+      ),
+      domain: domain.trim() || 'general',
+      criticality,
+      sourceFile: `workspace:${project.id}`,
+      tags: tags.map((tag: string) => tag.trim()).filter(Boolean),
+      changed,
+    });
+
+    const saved = saveProject(project);
+    res.status(201).json(saved);
+  });
+
+  app.post('/api/projects/:projectId/tests', (req, res) => {
+    const project = getProject(req.params.projectId);
+
+    if (!project) {
+      sendMissingProject(res);
+      return;
+    }
+
+    if (project.isDemo) {
+      res.status(403).json({
+        error: 'The built-in demo project is read-only.',
+      });
+      return;
+    }
+
+    const {
+      id,
+      title,
+      description,
+      type,
+      requirementIds,
+      status = 'not_run',
+      automated = false,
+      notes = '',
+      coverageType = 'partial',
+    } = req.body ?? {};
+
+    const validTypes = [
+      'functional',
+      'negative',
+      'boundary',
+      'security',
+      'edge',
+    ];
+
+    const validStatuses = [
+      'pass',
+      'fail',
+      'not_run',
+      'blocked',
+    ];
+
+    if (
+      typeof id !== 'string' ||
+      !id.trim() ||
+      id.length > 80 ||
+      typeof title !== 'string' ||
+      !title.trim() ||
+      typeof description !== 'string' ||
+      !description.trim() ||
+      !validTypes.includes(type) ||
+      !Array.isArray(requirementIds) ||
+      requirementIds.length === 0 ||
+      !requirementIds.every(
+        (requirementId) =>
+          typeof requirementId === 'string' &&
+          project.requirements.some(
+            (requirement) => requirement.id === requirementId,
+          ),
+      ) ||
+      !validStatuses.includes(status) ||
+      typeof automated !== 'boolean' ||
+      typeof notes !== 'string' ||
+      notes.length > 1000 ||
+      (coverageType !== 'full' && coverageType !== 'partial')
+    ) {
+      res.status(400).json({
+        error: 'Test case data is invalid.',
+      });
+      return;
+    }
+
+    if (
+      project.seededTests.some(
+        (testCase) => testCase.id === id.trim(),
+      )
+    ) {
+      res.status(409).json({
+        error: `Test case ${id.trim()} already exists.`,
+      });
+      return;
+    }
+
+    const normalizedRequirementIds = [
+      ...new Set(requirementIds as string[]),
+    ];
+
+    project.seededTests.push({
+      id: id.trim(),
+      title: title.trim(),
+      description: description.trim(),
+      type,
+      requirementIds: normalizedRequirementIds,
+      acceptanceCriteriaRefs: [],
+      status,
+      automated,
+      origin: 'seeded',
+      notes: notes.trim(),
+    });
+
+    for (const requirementId of normalizedRequirementIds) {
+      project.traceabilityLinks.push({
+        requirementId,
+        testCaseId: id.trim(),
+        coverageType,
+        notes:
+          'Linked through Spec2Ship Project Setup.',
+      });
+    }
+
+    const saved = saveProject(project);
+    res.status(201).json(saved);
   });
 
   // ------------------------------------------------------------------
