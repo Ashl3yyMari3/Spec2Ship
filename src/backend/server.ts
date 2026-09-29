@@ -35,6 +35,11 @@ import {
   initializeProjectStore,
   listProjects,
   saveProject,
+  isValidShipKey,
+  normalizeShipKey,
+  shipKeyInUse,
+  nextRequirementId,
+  nextTestCaseIds,
   type ProjectWorkspace,
 } from './services/projectStoreService.js';
 import type {
@@ -119,40 +124,6 @@ function sendMissingProject(res: express.Response): void {
 }
 
 
-function normalizedId(value: string): string {
-  return value.trim().toUpperCase();
-}
-
-function nextAvailableTestIds(
-  requirementId: string,
-  count: number,
-  existingIds: Iterable<string>,
-): string[] {
-  const used = new Set(
-    [...existingIds].map((id) => normalizedId(id)),
-  );
-
-  const requirementSegment = normalizedId(requirementId)
-    .replace(/^REQ-/, '')
-    .replace(/[^A-Z0-9-]/g, '-');
-
-  const prefix = `TC-AI-${requirementSegment}-`;
-  const ids: string[] = [];
-  let sequence = 1;
-
-  while (ids.length < count) {
-    const candidate = `${prefix}${String(sequence).padStart(2, '0')}`;
-
-    if (!used.has(candidate)) {
-      ids.push(candidate);
-      used.add(candidate);
-    }
-
-    sequence += 1;
-  }
-
-  return ids;
-}
 
 // ---------------------------------------------------------------------------
 // App factory
@@ -197,6 +168,7 @@ export function createApp(): express.Express {
   app.post('/api/projects', (req, res) => {
     const {
       name,
+      shipKey,
       description = '',
       template = 'blank',
     } = req.body ?? {};
@@ -205,19 +177,31 @@ export function createApp(): express.Express {
       typeof name !== 'string' ||
       !name.trim() ||
       name.length > 100 ||
+      typeof shipKey !== 'string' ||
+      !isValidShipKey(shipKey) ||
       typeof description !== 'string' ||
       description.length > 500 ||
       (template !== 'blank' && template !== 'shopsphere')
     ) {
       res.status(400).json({
         error:
-          'Project name is required. Description and template must be valid.',
+          'Project name and a valid Ship Key are required. Ship Key must be 2–8 letters or numbers and start with a letter.',
+      });
+      return;
+    }
+
+    const canonicalShipKey = normalizeShipKey(shipKey);
+
+    if (shipKeyInUse(canonicalShipKey)) {
+      res.status(409).json({
+        error: `Ship Key ${canonicalShipKey} is already used by another project.`,
       });
       return;
     }
 
     const project = createProject({
       name,
+      shipKey: canonicalShipKey,
       description,
       template,
     });
@@ -253,7 +237,6 @@ export function createApp(): express.Express {
     }
 
     const {
-      id,
       title,
       description,
       acceptanceCriteria,
@@ -271,8 +254,6 @@ export function createApp(): express.Express {
     ].includes(criticality);
 
     if (
-      typeof id !== 'string' ||
-      !isValidRequirementId(id) ||
       typeof title !== 'string' ||
       !title.trim() ||
       typeof description !== 'string' ||
@@ -299,20 +280,10 @@ export function createApp(): express.Express {
       return;
     }
 
-    if (
-      project.requirements.some(
-        (requirement) =>
-          normalizedId(requirement.id) === normalizedId(id),
-      )
-    ) {
-      res.status(409).json({
-        error: `Requirement ID ${normalizedId(id)} already exists in this project. Choose a different requirement ID.`,
-      });
-      return;
-    }
+    const requirementId = nextRequirementId(project);
 
     project.requirements.push({
-      id: normalizedId(id),
+      id: requirementId,
       title: title.trim(),
       description: description.trim(),
       acceptanceCriteria: acceptanceCriteria.map(
@@ -372,10 +343,9 @@ export function createApp(): express.Express {
           )
           .slice(0, 12);
 
-        const availableIds = nextAvailableTestIds(
-          requirement.id,
+        const availableIds = nextTestCaseIds(
+          project,
           newSuggestions.length,
-          project.seededTests.map((testCase) => testCase.id),
         );
 
         const suggestions = newSuggestions.map((test, index) => ({
@@ -447,47 +417,9 @@ export function createApp(): express.Express {
       'blocked',
     ];
 
-    const existingIds = new Set(
-      project.seededTests.map((testCase) =>
-        normalizedId(testCase.id),
-      ),
-    );
-
-    const incomingIds = new Set<string>();
-    const duplicateIds = new Set<string>();
-
-    for (const test of tests) {
-      if (test && typeof test.id === 'string' && test.id.trim()) {
-        const canonicalId = normalizedId(test.id);
-
-        if (
-          existingIds.has(canonicalId) ||
-          incomingIds.has(canonicalId)
-        ) {
-          duplicateIds.add(canonicalId);
-        }
-
-        incomingIds.add(canonicalId);
-      }
-    }
-
-    if (duplicateIds.size > 0) {
-      const ids = [...duplicateIds];
-
-      res.status(409).json({
-        error:
-          `These test case IDs already exist or appear more than once in this import: ${ids.join(', ')}. Regenerate the AI suggestions or change the duplicate IDs before saving.`,
-        duplicateIds: ids,
-      });
-      return;
-    }
-
     for (const test of tests) {
       if (
         !test ||
-        typeof test.id !== 'string' ||
-        !test.id.trim() ||
-        test.id.length > 80 ||
         typeof test.title !== 'string' ||
         !test.title.trim() ||
         typeof test.description !== 'string' ||
@@ -517,9 +449,13 @@ export function createApp(): express.Express {
       }
     }
 
-    for (const test of tests) {
+    const assignedIds = nextTestCaseIds(project, tests.length);
+
+    tests.forEach((test, index) => {
+      const assignedId = assignedIds[index];
+
       project.seededTests.push({
-        id: normalizedId(test.id),
+        id: assignedId,
         title: test.title.trim(),
         description: test.description.trim(),
         type: test.type,
@@ -558,17 +494,18 @@ export function createApp(): express.Express {
 
       project.traceabilityLinks.push({
         requirementId: test.requirementId,
-        testCaseId: normalizedId(test.id),
+        testCaseId: assignedId,
         coverageType: test.coverageType,
         notes:
-          'AI-generated suggestion reviewed and linked in Project Setup.',
+          'Added through Spec2Ship and linked to the selected requirement.',
       });
-    }
+    });
 
     const saved = saveProject(project);
 
     res.status(201).json({
       addedCount: tests.length,
+      assignedIds,
       project: saved,
     });
   });
@@ -589,7 +526,6 @@ export function createApp(): express.Express {
     }
 
     const {
-      id,
       title,
       description,
       type,
@@ -616,9 +552,6 @@ export function createApp(): express.Express {
     ];
 
     if (
-      typeof id !== 'string' ||
-      !id.trim() ||
-      id.length > 80 ||
       typeof title !== 'string' ||
       !title.trim() ||
       typeof description !== 'string' ||
@@ -645,24 +578,14 @@ export function createApp(): express.Express {
       return;
     }
 
-    if (
-      project.seededTests.some(
-        (testCase) =>
-          normalizedId(testCase.id) === normalizedId(id),
-      )
-    ) {
-      res.status(409).json({
-        error: `Test Case ID ${normalizedId(id)} already exists in this project. Use a different ID or let AI generate the next available ID.`,
-      });
-      return;
-    }
-
     const normalizedRequirementIds = [
       ...new Set(requirementIds as string[]),
     ];
 
+    const testCaseId = nextTestCaseIds(project, 1)[0];
+
     project.seededTests.push({
-      id: normalizedId(id),
+      id: testCaseId,
       title: title.trim(),
       description: description.trim(),
       type,
@@ -677,7 +600,7 @@ export function createApp(): express.Express {
     for (const requirementId of normalizedRequirementIds) {
       project.traceabilityLinks.push({
         requirementId,
-        testCaseId: normalizedId(id),
+        testCaseId,
         coverageType,
         notes:
           'Linked through Spec2Ship Project Setup.',
@@ -685,7 +608,10 @@ export function createApp(): express.Express {
     }
 
     const saved = saveProject(project);
-    res.status(201).json(saved);
+    res.status(201).json({
+      testCaseId,
+      project: saved,
+    });
   });
 
   // ------------------------------------------------------------------
