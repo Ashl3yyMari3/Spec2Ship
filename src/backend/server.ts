@@ -292,6 +292,193 @@ export function createApp(): express.Express {
     res.status(201).json(saved);
   });
 
+  app.post(
+    '/api/projects/:projectId/requirements/:requirementId/ai-tests',
+    aiRateLimiter,
+    async (req, res) => {
+      const project = getProject(req.params.projectId);
+
+      if (!project) {
+        sendMissingProject(res);
+        return;
+      }
+
+      const requirement = project.requirements.find(
+        (item) => item.id === req.params.requirementId,
+      );
+
+      if (!requirement) {
+        res.status(404).json({
+          error: 'Requirement not found in this project.',
+        });
+        return;
+      }
+
+      try {
+        const analysis = await analyzeRequirement(
+          `${requirement.title}\n${requirement.description}`,
+          requirement.acceptanceCriteria,
+        );
+
+        const existingTitles = new Set(
+          project.seededTests.map((testCase) =>
+            testCase.title.trim().toLowerCase(),
+          ),
+        );
+
+        const suggestions = analysis.suggestedTests
+          .filter(
+            (test) =>
+              !existingTitles.has(
+                test.title.trim().toLowerCase(),
+              ),
+          )
+          .slice(0, 12)
+          .map((test, index) => ({
+            id: `TC-AI-${requirement.id
+              .replace(/^REQ-/, '')
+              .replace(/[^A-Z0-9-]/gi, '-')
+              .toUpperCase()}-${String(index + 1).padStart(2, '0')}`,
+            title: test.title,
+            description: test.description,
+            type: test.type,
+            requirementId: requirement.id,
+            status: 'not_run' as const,
+            automated: false,
+            coverageType: 'partial' as const,
+          }));
+
+        res.json({
+          requirementId: requirement.id,
+          riskLevel: analysis.riskLevel,
+          summary: analysis.summary,
+          suggestions,
+        });
+      } catch (error) {
+        console.error('AI test generation failed:', error);
+        res.status(500).json({
+          error: 'AI test generation failed.',
+        });
+      }
+    },
+  );
+
+  app.post('/api/projects/:projectId/tests/batch', (req, res) => {
+    const project = getProject(req.params.projectId);
+
+    if (!project) {
+      sendMissingProject(res);
+      return;
+    }
+
+    if (project.isDemo) {
+      res.status(403).json({
+        error: 'The built-in demo project is read-only.',
+      });
+      return;
+    }
+
+    const { tests } = req.body ?? {};
+
+    if (
+      !Array.isArray(tests) ||
+      tests.length === 0 ||
+      tests.length > 20
+    ) {
+      res.status(400).json({
+        error: 'A batch of 1 to 20 test cases is required.',
+      });
+      return;
+    }
+
+    const validTypes = [
+      'functional',
+      'negative',
+      'boundary',
+      'security',
+      'edge',
+    ];
+
+    const validStatuses = [
+      'pass',
+      'fail',
+      'not_run',
+      'blocked',
+    ];
+
+    const existingIds = new Set(
+      project.seededTests.map((testCase) => testCase.id),
+    );
+
+    const incomingIds = new Set<string>();
+
+    for (const test of tests) {
+      if (
+        !test ||
+        typeof test.id !== 'string' ||
+        !test.id.trim() ||
+        test.id.length > 80 ||
+        incomingIds.has(test.id.trim()) ||
+        existingIds.has(test.id.trim()) ||
+        typeof test.title !== 'string' ||
+        !test.title.trim() ||
+        typeof test.description !== 'string' ||
+        !test.description.trim() ||
+        !validTypes.includes(test.type) ||
+        typeof test.requirementId !== 'string' ||
+        !project.requirements.some(
+          (requirement) =>
+            requirement.id === test.requirementId,
+        ) ||
+        !validStatuses.includes(test.status ?? 'not_run') ||
+        typeof (test.automated ?? false) !== 'boolean' ||
+        (test.coverageType !== 'full' &&
+          test.coverageType !== 'partial')
+      ) {
+        res.status(400).json({
+          error:
+            'One or more test cases are invalid or duplicate an existing ID.',
+        });
+        return;
+      }
+
+      incomingIds.add(test.id.trim());
+    }
+
+    for (const test of tests) {
+      project.seededTests.push({
+        id: test.id.trim(),
+        title: test.title.trim(),
+        description: test.description.trim(),
+        type: test.type,
+        requirementIds: [test.requirementId],
+        acceptanceCriteriaRefs: [],
+        status: test.status ?? 'not_run',
+        automated: test.automated ?? false,
+        origin: 'seeded',
+        notes:
+          typeof test.notes === 'string'
+            ? test.notes.trim()
+            : 'AI-generated suggestion reviewed and added in Project Setup.',
+      });
+
+      project.traceabilityLinks.push({
+        requirementId: test.requirementId,
+        testCaseId: test.id.trim(),
+        coverageType: test.coverageType,
+        notes:
+          'AI-generated suggestion reviewed and linked in Project Setup.',
+      });
+    }
+
+    const saved = saveProject(project);
+
+    res.status(201).json({
+      addedCount: tests.length,
+      project: saved,
+    });
+  });
+
   app.post('/api/projects/:projectId/tests', (req, res) => {
     const project = getProject(req.params.projectId);
 
