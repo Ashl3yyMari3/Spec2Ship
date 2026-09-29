@@ -243,10 +243,14 @@ function loadCustomProjects(): void {
       migrated = true;
     }
 
-    project = {
-      ...project,
-      shipKey: candidate,
-    };
+    if (candidate !== project.shipKey) {
+      project = rekeyProjectData(project, candidate);
+    } else {
+      project = {
+        ...project,
+        shipKey: candidate,
+      };
+    }
 
     usedKeys.add(candidate);
     customProjects.set(project.id, project);
