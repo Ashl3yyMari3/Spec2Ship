@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import AppLayout from './components/Layout/AppLayout';
 import RequirementsPage from './pages/RequirementsPage';
 import TestsPage from './pages/TestsPage';
@@ -12,6 +12,7 @@ import CopilotPage from './pages/CopilotPage';
 import ProjectsPage from './pages/ProjectsPage';
 import ProjectSetupPage from './pages/ProjectSetupPage';
 import AutomationCenterPage from './pages/AutomationCenterPage';
+import HomePage from './pages/HomePage';
 import { ProjectProvider } from './context/ProjectContext';
 import { CopilotProvider } from './context/CopilotContext';
 
@@ -22,8 +23,7 @@ export default function App(): React.ReactElement {
         <BrowserRouter>
       <Routes>
         <Route element={<AppLayout />}>
-          {/* Redirect root to Risk Dashboard */}
-          <Route index element={<Navigate to="/risk" replace />} />
+          <Route index element={<HomePage />} />
 
           {/* Implemented pages */}
           <Route path="/requirements" element={<RequirementsPage />} />
