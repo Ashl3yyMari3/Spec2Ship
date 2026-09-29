@@ -33,3 +33,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Local Spec2Ship project workspaces
+.spec2ship/
