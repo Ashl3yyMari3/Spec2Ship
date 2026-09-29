@@ -17,6 +17,15 @@ const IconProjects = (
   </svg>
 );
 
+const IconSetup = (
+  <svg className="sidebar__icon" viewBox="0 0 18 18" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <path d="M4 5.5h10M4 9h10M4 12.5h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    <circle cx="7" cy="5.5" r="1.4" fill="currentColor"/>
+    <circle cx="11.5" cy="9" r="1.4" fill="currentColor"/>
+    <circle cx="8.5" cy="12.5" r="1.4" fill="currentColor"/>
+  </svg>
+);
+
 
 const IconRequirements = (
   <svg className="sidebar__icon" viewBox="0 0 18 18" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -85,6 +94,7 @@ const IconAI = (
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Projects',         to: '/projects',      icon: IconProjects },
+  { label: 'Project Setup',    to: '/project/setup', icon: IconSetup },
   { label: 'Requirements',     to: '/requirements',  icon: IconRequirements },
   { label: 'Test Cases',       to: '/tests',         icon: IconTestCases },
   { label: 'Traceability',     to: '/traceability',  icon: IconTraceability },
