@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useProject } from '../../context/ProjectContext';
+import { useApi } from '../../hooks/useApi';
 
 function OrbitalLogo(): React.ReactElement {
   return (
@@ -46,8 +48,18 @@ function OrbitalLogo(): React.ReactElement {
   );
 }
 
+interface HeaderProject {
+  id: string;
+  name: string;
+  isDemo: boolean;
+}
+
 export default function Header(): React.ReactElement {
   const navigate = useNavigate();
+  const { selectedProjectId } = useProject();
+  const { data: project } = useApi<HeaderProject>(
+    `/api/projects/${selectedProjectId}`,
+  );
   const [query, setQuery] = useState('');
 
   function handleSubmit(
@@ -114,6 +126,17 @@ export default function Header(): React.ReactElement {
           aria-label="Search requirements"
         />
       </form>
+
+      <Link
+        to="/projects"
+        className="header__project-pill"
+        title="Switch project"
+      >
+        <span className="header__project-pill-label">
+          Current Project
+        </span>
+        <strong>{project?.name ?? 'Loading…'}</strong>
+      </Link>
 
       <span
         className="header__mission-control"
