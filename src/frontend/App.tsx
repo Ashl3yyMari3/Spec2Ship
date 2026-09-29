@@ -9,10 +9,13 @@ import ImpactPage from './pages/ImpactPage';
 import RiskPage from './pages/RiskPage';
 import ReportPage from './pages/ReportPage';
 import CopilotPage from './pages/CopilotPage';
+import ProjectsPage from './pages/ProjectsPage';
+import { ProjectProvider } from './context/ProjectContext';
 
 export default function App(): React.ReactElement {
   return (
-    <BrowserRouter>
+    <ProjectProvider>
+      <BrowserRouter>
       <Routes>
         <Route element={<AppLayout />}>
           {/* Redirect root to Risk Dashboard */}
@@ -29,8 +32,10 @@ export default function App(): React.ReactElement {
           <Route path="/risk" element={<RiskPage />} />
           <Route path="/report" element={<ReportPage />} />
           <Route path="/ai" element={<CopilotPage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+      </BrowserRouter>
+    </ProjectProvider>
   );
 }
