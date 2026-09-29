@@ -304,4 +304,65 @@ describe('AI project test workflow guardrails', () => {
     expect(res.status).toBe(404);
     expect(res.body).toHaveProperty('error', 'Project not found.');
   });
+
+  it('reports the exact duplicate test case ID in a batch', async () => {
+    const projectRes = await request(app)
+      .post('/api/projects')
+      .send({
+        name: 'Duplicate ID Guardrail Test',
+        description: 'Temporary integration-test workspace.',
+        template: 'blank',
+      });
+
+    expect(projectRes.status).toBe(201);
+
+    const projectId = projectRes.body.id as string;
+
+    const requirementRes = await request(app)
+      .post(`/api/projects/${projectId}/requirements`)
+      .send({
+        id: 'REQ-DUP-001',
+        title: 'Duplicate ID Guardrail',
+        description: 'Provide a requirement for duplicate-ID validation.',
+        acceptanceCriteria: ['Duplicate test IDs must be rejected clearly.'],
+        domain: 'testing',
+        criticality: 'medium',
+        changed: false,
+      });
+
+    expect(requirementRes.status).toBe(201);
+
+    const duplicateRes = await request(app)
+      .post(`/api/projects/${projectId}/tests/batch`)
+      .send({
+        tests: [
+          {
+            id: 'TC-DUP-001',
+            title: 'Duplicate one',
+            description: 'First duplicate test.',
+            type: 'functional',
+            requirementId: 'REQ-DUP-001',
+            status: 'not_run',
+            automated: false,
+            coverageType: 'partial',
+          },
+          {
+            id: 'tc-dup-001',
+            title: 'Duplicate two',
+            description: 'Same ID with different casing.',
+            type: 'negative',
+            requirementId: 'REQ-DUP-001',
+            status: 'not_run',
+            automated: false,
+            coverageType: 'partial',
+          },
+        ],
+      });
+
+    expect(duplicateRes.status).toBe(409);
+    expect(duplicateRes.body.duplicateIds).toEqual([
+      'TC-DUP-001',
+    ]);
+    expect(duplicateRes.body.error).toContain('TC-DUP-001');
+  });
 });
