@@ -267,3 +267,41 @@ describe('Project workspaces', () => {
     expect(res.body).toHaveProperty('error', 'Project not found.');
   });
 });
+
+
+describe('AI project test workflow guardrails', () => {
+  it('does not allow batch test writes to the built-in demo', async () => {
+    const res = await request(app)
+      .post('/api/projects/shopsphere-demo/tests/batch')
+      .send({
+        tests: [
+          {
+            id: 'TC-DEMO-BLOCKED-01',
+            title: 'Should not be saved',
+            description: 'The demo project must remain read-only.',
+            type: 'functional',
+            requirementId: 'REQ-AUTH-001',
+            status: 'not_run',
+            automated: false,
+            coverageType: 'partial',
+          },
+        ],
+      });
+
+    expect(res.status).toBe(403);
+    expect(res.body).toHaveProperty(
+      'error',
+      'The built-in demo project is read-only.',
+    );
+  });
+
+  it('rejects AI test generation for an unknown project before calling AI', async () => {
+    const res = await request(app)
+      .post(
+        '/api/projects/missing-project/requirements/REQ-TEST-001/ai-tests',
+      );
+
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty('error', 'Project not found.');
+  });
+});
