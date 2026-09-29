@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { Requirement, TestType } from '@backend/types/models';
 
 interface AISuggestedTest {
@@ -37,6 +37,28 @@ export default function AIProjectTestGenerator({
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadingStage, setLoadingStage] = useState(0);
+
+  const loadingMessages = [
+    'Analyzing the requirement and acceptance criteria…',
+    'Looking for negative, boundary, security, and edge cases…',
+    'Drafting test scenarios for your review…',
+  ];
+
+  useEffect(() => {
+    if (!generating) {
+      setLoadingStage(0);
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setLoadingStage((current) =>
+        (current + 1) % loadingMessages.length,
+      );
+    }, 2200);
+
+    return () => window.clearInterval(timer);
+  }, [generating]);
 
   const selectedTests = useMemo(
     () =>
@@ -161,8 +183,28 @@ export default function AIProjectTestGenerator({
         onClick={() => void generate()}
         disabled={generating || disabled}
       >
-        {generating ? 'Generating Tests…' : '✦ Generate Tests with AI'}
+        {generating ? '✦ Spec2Ship AI is working…' : '✦ Generate Tests with AI'}
       </button>
+
+      {generating && (
+        <div
+          className="project-ai-tests__loading"
+          role="status"
+          aria-live="polite"
+        >
+          <span
+            className="project-ai-tests__loading-orb"
+            aria-hidden="true"
+          />
+          <div>
+            <strong>{loadingMessages[loadingStage]}</strong>
+            <span>
+              Suggestions will appear here for you to review before anything
+              is added to the project.
+            </span>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="project-ai-tests__error" role="alert">
