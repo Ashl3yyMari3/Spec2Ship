@@ -81,7 +81,7 @@ Answer as Spec2Ship AI.
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
+        model: 'gemini-3.8-flash',
         contents: prompt,
       });
 
