@@ -118,6 +118,42 @@ function sendMissingProject(res: express.Response): void {
   });
 }
 
+
+function normalizedId(value: string): string {
+  return value.trim().toUpperCase();
+}
+
+function nextAvailableTestIds(
+  requirementId: string,
+  count: number,
+  existingIds: Iterable<string>,
+): string[] {
+  const used = new Set(
+    [...existingIds].map((id) => normalizedId(id)),
+  );
+
+  const requirementSegment = normalizedId(requirementId)
+    .replace(/^REQ-/, '')
+    .replace(/[^A-Z0-9-]/g, '-');
+
+  const prefix = `TC-AI-${requirementSegment}-`;
+  const ids: string[] = [];
+  let sequence = 1;
+
+  while (ids.length < count) {
+    const candidate = `${prefix}${String(sequence).padStart(2, '0')}`;
+
+    if (!used.has(candidate)) {
+      ids.push(candidate);
+      used.add(candidate);
+    }
+
+    sequence += 1;
+  }
+
+  return ids;
+}
+
 // ---------------------------------------------------------------------------
 // App factory
 // ---------------------------------------------------------------------------
@@ -265,17 +301,18 @@ export function createApp(): express.Express {
 
     if (
       project.requirements.some(
-        (requirement) => requirement.id === id.trim(),
+        (requirement) =>
+          normalizedId(requirement.id) === normalizedId(id),
       )
     ) {
       res.status(409).json({
-        error: `Requirement ${id.trim()} already exists.`,
+        error: `Requirement ID ${normalizedId(id)} already exists in this project. Choose a different requirement ID.`,
       });
       return;
     }
 
     project.requirements.push({
-      id: id.trim(),
+      id: normalizedId(id),
       title: title.trim(),
       description: description.trim(),
       acceptanceCriteria: acceptanceCriteria.map(
@@ -326,27 +363,31 @@ export function createApp(): express.Express {
           ),
         );
 
-        const suggestions = analysis.suggestedTests
+        const newSuggestions = analysis.suggestedTests
           .filter(
             (test) =>
               !existingTitles.has(
                 test.title.trim().toLowerCase(),
               ),
           )
-          .slice(0, 12)
-          .map((test, index) => ({
-            id: `TC-AI-${requirement.id
-              .replace(/^REQ-/, '')
-              .replace(/[^A-Z0-9-]/gi, '-')
-              .toUpperCase()}-${String(index + 1).padStart(2, '0')}`,
-            title: test.title,
-            description: test.description,
-            type: test.type,
-            requirementId: requirement.id,
-            status: 'not_run' as const,
-            automated: false,
-            coverageType: 'partial' as const,
-          }));
+          .slice(0, 12);
+
+        const availableIds = nextAvailableTestIds(
+          requirement.id,
+          newSuggestions.length,
+          project.seededTests.map((testCase) => testCase.id),
+        );
+
+        const suggestions = newSuggestions.map((test, index) => ({
+          id: availableIds[index],
+          title: test.title,
+          description: test.description,
+          type: test.type,
+          requirementId: requirement.id,
+          status: 'not_run' as const,
+          automated: false,
+          coverageType: 'partial' as const,
+        }));
 
         res.json({
           requirementId: requirement.id,
@@ -407,10 +448,39 @@ export function createApp(): express.Express {
     ];
 
     const existingIds = new Set(
-      project.seededTests.map((testCase) => testCase.id),
+      project.seededTests.map((testCase) =>
+        normalizedId(testCase.id),
+      ),
     );
 
     const incomingIds = new Set<string>();
+    const duplicateIds = new Set<string>();
+
+    for (const test of tests) {
+      if (test && typeof test.id === 'string' && test.id.trim()) {
+        const canonicalId = normalizedId(test.id);
+
+        if (
+          existingIds.has(canonicalId) ||
+          incomingIds.has(canonicalId)
+        ) {
+          duplicateIds.add(canonicalId);
+        }
+
+        incomingIds.add(canonicalId);
+      }
+    }
+
+    if (duplicateIds.size > 0) {
+      const ids = [...duplicateIds];
+
+      res.status(409).json({
+        error:
+          `These test case IDs already exist or appear more than once in this import: ${ids.join(', ')}. Regenerate the AI suggestions or change the duplicate IDs before saving.`,
+        duplicateIds: ids,
+      });
+      return;
+    }
 
     for (const test of tests) {
       if (
@@ -418,8 +488,6 @@ export function createApp(): express.Express {
         typeof test.id !== 'string' ||
         !test.id.trim() ||
         test.id.length > 80 ||
-        incomingIds.has(test.id.trim()) ||
-        existingIds.has(test.id.trim()) ||
         typeof test.title !== 'string' ||
         !test.title.trim() ||
         typeof test.description !== 'string' ||
@@ -443,17 +511,15 @@ export function createApp(): express.Express {
       ) {
         res.status(400).json({
           error:
-            'One or more test cases are invalid or duplicate an existing ID.',
+            'One or more test cases are invalid. Review the test ID, title, description, linked requirement, type, status, and coverage fields.',
         });
         return;
       }
-
-      incomingIds.add(test.id.trim());
     }
 
     for (const test of tests) {
       project.seededTests.push({
-        id: test.id.trim(),
+        id: normalizedId(test.id),
         title: test.title.trim(),
         description: test.description.trim(),
         type: test.type,
@@ -492,7 +558,7 @@ export function createApp(): express.Express {
 
       project.traceabilityLinks.push({
         requirementId: test.requirementId,
-        testCaseId: test.id.trim(),
+        testCaseId: normalizedId(test.id),
         coverageType: test.coverageType,
         notes:
           'AI-generated suggestion reviewed and linked in Project Setup.',
@@ -581,11 +647,12 @@ export function createApp(): express.Express {
 
     if (
       project.seededTests.some(
-        (testCase) => testCase.id === id.trim(),
+        (testCase) =>
+          normalizedId(testCase.id) === normalizedId(id),
       )
     ) {
       res.status(409).json({
-        error: `Test case ${id.trim()} already exists.`,
+        error: `Test Case ID ${normalizedId(id)} already exists in this project. Use a different ID or let AI generate the next available ID.`,
       });
       return;
     }
