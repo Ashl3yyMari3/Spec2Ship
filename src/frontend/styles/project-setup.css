@@ -43,3 +43,7 @@
 .project-ai-tests__loading strong{color:#e0f2fe;font-size:12px}
 .project-ai-tests__loading span{color:rgba(203,213,225,.7);font-size:11px;line-height:1.45}
 @keyframes spec2ship-ai-pulse{0%{box-shadow:0 0 0 0 rgba(34,211,238,.45)}70%{box-shadow:0 0 0 9px rgba(34,211,238,0)}100%{box-shadow:0 0 0 0 rgba(34,211,238,0)}}
+
+.project-setup__automation-link{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:12px;padding:11px 12px;border:1px solid rgba(34,211,238,.18);border-radius:10px;background:rgba(8,47,73,.12)}
+.project-setup__automation-link span{color:rgba(203,213,225,.7);font-size:11px}
+.project-setup__automation-link a{color:#67e8f9;font-size:11px;font-weight:800;text-decoration:none}
