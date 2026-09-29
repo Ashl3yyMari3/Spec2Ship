@@ -5,7 +5,7 @@
  * without opening a real port.
  *
  * Data is loaded once at startup and cached in module scope.
- * All 8 API routes are registered here.
+ * API routes are registered here.
  */
 
 import path from 'path';
@@ -75,6 +75,10 @@ const links = validateLinks(
 
 export function createApp(): express.Express {
   const app = express();
+
+  if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+  }
 
   // CORS is only needed for local development because production
   // serves the frontend and API from the same origin.
