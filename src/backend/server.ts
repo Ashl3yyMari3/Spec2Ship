@@ -443,7 +443,7 @@ export function createApp(): express.Express {
       ) {
         res.status(400).json({
           error:
-            'One or more test cases are invalid. Review the test ID, title, description, linked requirement, type, status, and coverage fields.',
+            'One or more test cases are invalid. Review the title, description, linked requirement, type, status, and coverage fields.',
         });
         return;
       }
