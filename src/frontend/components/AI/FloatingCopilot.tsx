@@ -16,10 +16,16 @@ interface ProjectHeader {
   name: string;
 }
 
-const SUGGESTED_QUESTIONS = [
+const PROJECT_QUESTIONS = [
   'Why is this release Review Required?',
   'What should I test next?',
   'Where is the highest risk?',
+];
+
+const ONBOARDING_QUESTIONS = [
+  'How do I create a workspace?',
+  'How do I explore the demo?',
+  'How do I find a project or test?',
 ];
 
 export default function FloatingCopilot(): React.ReactElement {
@@ -27,6 +33,7 @@ export default function FloatingCopilot(): React.ReactElement {
     messages,
     loading,
     error,
+    projectAware,
     askQuestion,
     clearConversation,
   } = useCopilot();
@@ -34,12 +41,21 @@ export default function FloatingCopilot(): React.ReactElement {
   const { selectedProjectId } = useProject();
 
   const { data: project } = useApi<ProjectHeader>(
-    `/api/projects/${encodeURIComponent(selectedProjectId)}`,
+    selectedProjectId
+      ? `/api/projects/${encodeURIComponent(
+          selectedProjectId,
+        )}`
+      : null,
   );
 
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
-  const threadRef = useRef<HTMLDivElement | null>(null);
+  const threadRef =
+    useRef<HTMLDivElement | null>(null);
+
+  const suggestions = projectAware
+    ? PROJECT_QUESTIONS
+    : ONBOARDING_QUESTIONS;
 
   useEffect(() => {
     if (!open) return;
@@ -47,7 +63,8 @@ export default function FloatingCopilot(): React.ReactElement {
     const element = threadRef.current;
 
     if (element) {
-      element.scrollTop = element.scrollHeight;
+      element.scrollTop =
+        element.scrollHeight;
     }
   }, [messages, loading, open]);
 
@@ -70,7 +87,10 @@ export default function FloatingCopilot(): React.ReactElement {
   function handleKeyDown(
     event: KeyboardEvent<HTMLTextAreaElement>,
   ): void {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (
+      event.key === 'Enter' &&
+      !event.shiftKey
+    ) {
       event.preventDefault();
       void send();
     }
@@ -86,11 +106,17 @@ export default function FloatingCopilot(): React.ReactElement {
           <header className="floating-copilot__header">
             <div>
               <div className="floating-copilot__title">
-                <span aria-hidden="true">✦</span>
+                <span aria-hidden="true">
+                  ✦
+                </span>
                 <strong>Spec2Ship AI</strong>
               </div>
+
               <span className="floating-copilot__project">
-                {project?.name ?? 'Current project'}
+                {projectAware
+                  ? project?.name ??
+                    'Current workspace'
+                  : 'Getting Started'}
               </span>
             </div>
 
@@ -103,9 +129,12 @@ export default function FloatingCopilot(): React.ReactElement {
               >
                 ↻
               </button>
+
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() =>
+                  setOpen(false)
+                }
                 title="Minimize chat"
                 aria-label="Minimize Spec2Ship AI"
               >
@@ -119,31 +148,35 @@ export default function FloatingCopilot(): React.ReactElement {
             ref={threadRef}
             aria-live="polite"
           >
-            {messages.map((message, index) => (
-              <article
-                className={
-                  'floating-copilot__message ' +
-                  `floating-copilot__message--${message.role}`
-                }
-                key={`${message.role}-${index}-${message.content.slice(
-                  0,
-                  18,
-                )}`}
-              >
-                <span>
-                  {message.role === 'assistant'
-                    ? '✦ Spec2Ship AI'
-                    : 'You'}
-                </span>
-                <p>{message.content}</p>
-              </article>
-            ))}
+            {messages.map(
+              (message, index) => (
+                <article
+                  className={
+                    'floating-copilot__message ' +
+                    `floating-copilot__message--${message.role}`
+                  }
+                  key={`${message.role}-${index}-${message.content.slice(
+                    0,
+                    18,
+                  )}`}
+                >
+                  <span>
+                    {message.role ===
+                    'assistant'
+                      ? '✦ Spec2Ship AI'
+                      : 'You'}
+                  </span>
+                  <p>{message.content}</p>
+                </article>
+              ),
+            )}
 
             {loading && (
               <article className="floating-copilot__message floating-copilot__message--assistant">
                 <span>✦ Spec2Ship AI</span>
                 <p className="floating-copilot__thinking">
-                  Reviewing this project’s QA evidence…
+                  Reviewing this workspace’s QA
+                  evidence…
                 </p>
               </article>
             )}
@@ -151,16 +184,22 @@ export default function FloatingCopilot(): React.ReactElement {
 
           {messages.length <= 1 && (
             <div className="floating-copilot__suggestions">
-              {SUGGESTED_QUESTIONS.map((question) => (
-                <button
-                  type="button"
-                  key={question}
-                  disabled={loading}
-                  onClick={() => void askQuestion(question)}
-                >
-                  {question}
-                </button>
-              ))}
+              {suggestions.map(
+                (question) => (
+                  <button
+                    type="button"
+                    key={question}
+                    disabled={loading}
+                    onClick={() =>
+                      void askQuestion(
+                        question,
+                      )
+                    }
+                  >
+                    {question}
+                  </button>
+                ),
+              )}
             </div>
           )}
 
@@ -180,10 +219,16 @@ export default function FloatingCopilot(): React.ReactElement {
             <textarea
               value={input}
               onChange={(event) =>
-                setInput(event.target.value)
+                setInput(
+                  event.target.value,
+                )
               }
               onKeyDown={handleKeyDown}
-              placeholder="Ask Spec2Ship about this project…"
+              placeholder={
+                projectAware
+                  ? 'Ask Spec2Ship about this workspace…'
+                  : 'Ask how to get started with Spec2Ship…'
+              }
               maxLength={2000}
               rows={2}
               disabled={loading}
@@ -191,13 +236,20 @@ export default function FloatingCopilot(): React.ReactElement {
             />
 
             <div className="floating-copilot__composer-footer">
-              <Link to="/ai">Open full chat</Link>
+              <Link to="/ai">
+                Open full chat
+              </Link>
 
               <button
                 type="submit"
-                disabled={loading || !input.trim()}
+                disabled={
+                  loading ||
+                  !input.trim()
+                }
               >
-                {loading ? 'Thinking…' : 'Send'}
+                {loading
+                  ? 'Thinking…'
+                  : 'Send'}
               </button>
             </div>
           </form>
@@ -208,9 +260,15 @@ export default function FloatingCopilot(): React.ReactElement {
         type="button"
         className={
           'floating-copilot__launcher' +
-          (open ? ' floating-copilot__launcher--open' : '')
+          (open
+            ? ' floating-copilot__launcher--open'
+            : '')
         }
-        onClick={() => setOpen((current) => !current)}
+        onClick={() =>
+          setOpen(
+            (current) => !current,
+          )
+        }
         aria-label={
           open
             ? 'Close Spec2Ship AI'
@@ -218,7 +276,10 @@ export default function FloatingCopilot(): React.ReactElement {
         }
         aria-expanded={open}
       >
-        <span className="floating-copilot__launcher-orb">✦</span>
+        <span className="floating-copilot__launcher-orb">
+          ✦
+        </span>
+
         {!open && (
           <span className="floating-copilot__launcher-label">
             Ask Spec2Ship AI
