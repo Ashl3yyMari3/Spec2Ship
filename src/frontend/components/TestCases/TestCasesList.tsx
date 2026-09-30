@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import type { TestCase, TestStatus, TestOrigin, AcceptanceCriteriaRef } from '@backend/types/models';
 
 interface Props {
   tests: TestCase[];
+  focusId?: string;
 }
 
 function statusClass(s: TestStatus): string {
@@ -38,7 +39,25 @@ function formatAcRef(ref: AcceptanceCriteriaRef): string {
   return `${ref.requirementId} · AC ${ref.criterionIndex + 1}`;
 }
 
-export default function TestCasesList({ tests }: Props): React.ReactElement {
+export default function TestCasesList({
+  tests,
+  focusId = '',
+}: Props): React.ReactElement {
+  useEffect(() => {
+    if (!focusId) return;
+
+    const element = document.getElementById(
+      `test-card-${focusId}`,
+    );
+
+    if (!element) return;
+
+    element.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+  }, [focusId, tests]);
+
   if (tests.length === 0) {
     return (
       <p className="state-message" role="status">
@@ -50,7 +69,17 @@ export default function TestCasesList({ tests }: Props): React.ReactElement {
   return (
     <section aria-label="Test cases list">
       {tests.map((tc) => (
-        <article key={tc.id} className="card" aria-labelledby={`tc-title-${tc.id}`}>
+        <article
+          key={tc.id}
+          id={`test-card-${tc.id}`}
+          className={
+            'card' +
+            (focusId === tc.id
+              ? ' card--search-focus'
+              : '')
+          }
+          aria-labelledby={`tc-title-${tc.id}`}
+        >
           {/* ID pill */}
           <p
             style={{
