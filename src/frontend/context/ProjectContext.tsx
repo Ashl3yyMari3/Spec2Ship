@@ -6,23 +6,25 @@ import React, {
 } from 'react';
 
 interface ProjectContextValue {
-  selectedProjectId: string;
+  selectedProjectId: string | null;
+  hasOpenProject: boolean;
   selectProject: (projectId: string) => void;
+  closeProject: () => void;
   projectApiUrl: (url: string) => string;
 }
 
-const DEFAULT_PROJECT_ID = 'shopsphere-demo';
 const STORAGE_KEY = 'spec2ship.selectedProjectId';
 
-const ProjectContext = createContext<ProjectContextValue | null>(null);
+const ProjectContext =
+  createContext<ProjectContextValue | null>(null);
 
-function readInitialProjectId(): string {
-  if (typeof window === 'undefined') return DEFAULT_PROJECT_ID;
+function readInitialProjectId(): string | null {
+  if (typeof window === 'undefined') return null;
 
-  return (
-    window.localStorage.getItem(STORAGE_KEY) ??
-    DEFAULT_PROJECT_ID
-  );
+  const stored =
+    window.localStorage.getItem(STORAGE_KEY);
+
+  return stored?.trim() || null;
 }
 
 export function ProjectProvider({
@@ -30,25 +32,54 @@ export function ProjectProvider({
 }: {
   children: React.ReactNode;
 }): React.ReactElement {
-  const [selectedProjectId, setSelectedProjectId] = useState(
+  const [
+    selectedProjectId,
+    setSelectedProjectId,
+  ] = useState<string | null>(
     readInitialProjectId,
   );
 
   function selectProject(projectId: string): void {
-    setSelectedProjectId(projectId);
-    window.localStorage.setItem(STORAGE_KEY, projectId);
+    const next = projectId.trim();
+
+    if (!next) return;
+
+    setSelectedProjectId(next);
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      next,
+    );
+  }
+
+  function closeProject(): void {
+    setSelectedProjectId(null);
+    window.localStorage.removeItem(STORAGE_KEY);
   }
 
   const value = useMemo<ProjectContextValue>(
     () => ({
       selectedProjectId,
+      hasOpenProject: selectedProjectId !== null,
       selectProject,
+      closeProject,
       projectApiUrl: (url: string) => {
         if (!url.startsWith('/api/')) return url;
-        if (url.startsWith('/api/projects')) return url;
-        if (url.startsWith('/api/search')) return url;
 
-        const separator = url.includes('?') ? '&' : '?';
+        if (url.startsWith('/api/projects')) {
+          return url;
+        }
+
+        if (url.startsWith('/api/search')) {
+          return url;
+        }
+
+        if (!selectedProjectId) {
+          return url;
+        }
+
+        const separator = url.includes('?')
+          ? '&'
+          : '?';
 
         return `${url}${separator}projectId=${encodeURIComponent(
           selectedProjectId,
