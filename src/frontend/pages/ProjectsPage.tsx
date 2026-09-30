@@ -1,4 +1,9 @@
-import React, { FormEvent, useState } from 'react';
+import React, {
+  FormEvent,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { useProject } from '../context/ProjectContext';
@@ -22,23 +27,113 @@ interface CreatedProject {
   shipKey: string;
 }
 
+interface DeleteResponse {
+  deleted: boolean;
+  project: ProjectSummary;
+}
+
 export default function ProjectsPage(): React.ReactElement {
   const navigate = useNavigate();
-  const { data: projects, loading, error } =
-    useApi<ProjectSummary[]>('/api/projects');
-  const { selectedProjectId, selectProject } = useProject();
+  const {
+    data: projects,
+    loading,
+    error,
+  } = useApi<ProjectSummary[]>('/api/projects');
 
+  const {
+    selectedProjectId,
+    selectProject,
+  } = useProject();
+
+  const [projectList, setProjectList] =
+    useState<ProjectSummary[]>([]);
+
+  const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState('');
   const [shipKey, setShipKey] = useState('');
   const [description, setDescription] = useState('');
   const [template, setTemplate] =
     useState<'blank' | 'shopsphere'>('blank');
   const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
+  const [createError, setCreateError] =
+    useState<string | null>(null);
+
+  const [openMenuId, setOpenMenuId] =
+    useState<string | null>(null);
+
+  const [deleteTarget, setDeleteTarget] =
+    useState<ProjectSummary | null>(null);
+  const [deleteKey, setDeleteKey] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] =
+    useState<string | null>(null);
+  const [notice, setNotice] =
+    useState<string | null>(null);
+
+  useEffect(() => {
+    if (projects) {
+      setProjectList(projects);
+    }
+  }, [projects]);
+
+  const demoProject = useMemo(
+    () =>
+      projectList.find((project) => project.isDemo) ??
+      null,
+    [projectList],
+  );
+
+  const customProjects = useMemo(
+    () =>
+      projectList
+        .filter((project) => !project.isDemo)
+        .sort((a, b) =>
+          b.updatedAt.localeCompare(a.updatedAt),
+        ),
+    [projectList],
+  );
+
+  const deleteConfirmed =
+    deleteTarget !== null &&
+    deleteKey.trim().toUpperCase() ===
+      deleteTarget.shipKey;
 
   function openProject(projectId: string): void {
     selectProject(projectId);
+    setOpenMenuId(null);
     navigate('/project/setup');
+  }
+
+  function resetCreateForm(): void {
+    setName('');
+    setShipKey('');
+    setDescription('');
+    setTemplate('blank');
+    setCreateError(null);
+  }
+
+  function closeCreatePanel(): void {
+    if (creating) return;
+
+    resetCreateForm();
+    setCreateOpen(false);
+  }
+
+  function openDeleteDialog(
+    project: ProjectSummary,
+  ): void {
+    setOpenMenuId(null);
+    setDeleteTarget(project);
+    setDeleteKey('');
+    setDeleteError(null);
+  }
+
+  function closeDeleteDialog(): void {
+    if (deleting) return;
+
+    setDeleteTarget(null);
+    setDeleteKey('');
+    setDeleteError(null);
   }
 
   async function handleCreate(
@@ -46,10 +141,17 @@ export default function ProjectsPage(): React.ReactElement {
   ): Promise<void> {
     event.preventDefault();
 
-    if (!name.trim() || !shipKey.trim() || creating) return;
+    if (
+      !name.trim() ||
+      !shipKey.trim() ||
+      creating
+    ) {
+      return;
+    }
 
     setCreating(true);
     setCreateError(null);
+    setNotice(null);
 
     try {
       const response = await fetch('/api/projects', {
@@ -90,153 +192,228 @@ export default function ProjectsPage(): React.ReactElement {
     }
   }
 
+  async function handleDelete(): Promise<void> {
+    if (
+      !deleteTarget ||
+      !deleteConfirmed ||
+      deleting
+    ) {
+      return;
+    }
+
+    setDeleting(true);
+    setDeleteError(null);
+    setNotice(null);
+
+    try {
+      const response = await fetch(
+        `/api/projects/${encodeURIComponent(
+          deleteTarget.id,
+        )}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            confirmShipKey: deleteKey.trim(),
+          }),
+        },
+      );
+
+      const payload = (await response.json()) as
+        | DeleteResponse
+        | { error?: string };
+
+      if (
+        !response.ok ||
+        !('deleted' in payload) ||
+        !payload.deleted
+      ) {
+        throw new Error(
+          'error' in payload && payload.error
+            ? payload.error
+            : 'Could not delete workspace.',
+        );
+      }
+
+      const remainingProjects = customProjects.filter(
+        (project) =>
+          project.id !== deleteTarget.id,
+      );
+
+      setProjectList((current) =>
+        current.filter(
+          (project) =>
+            project.id !== deleteTarget.id,
+        ),
+      );
+
+      window.sessionStorage.removeItem(
+        `spec2ship.ai.chat.${deleteTarget.id}`,
+      );
+
+      if (selectedProjectId === deleteTarget.id) {
+        selectProject(
+          remainingProjects[0]?.id ??
+            'shopsphere-demo',
+        );
+      }
+
+      setNotice(
+        `${deleteTarget.name} was deleted.`,
+      );
+      setDeleteTarget(null);
+      setDeleteKey('');
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error
+          ? err.message
+          : 'Could not delete workspace.',
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <>
-      <div className="page-header">
-        <p className="projects-page__eyebrow">Project Workspaces</p>
-        <h1 className="page-header__title">Projects</h1>
-        <p className="page-header__subtitle">
-          Create or open a QA workspace. Every project keeps its own
-          requirements, tests, traceability, risk, and release-readiness
-          results.
-        </p>
+      <div className="page-header projects-page__header">
+        <div>
+          <p className="projects-page__eyebrow">
+            Project Workspaces
+          </p>
+          <h1 className="page-header__title">
+            Projects
+          </h1>
+          <p className="page-header__subtitle">
+            Open a QA workspace or create a new one.
+            Each workspace keeps its own requirements,
+            tests, automation, risk, and release evidence.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className={
+            'projects-page__new-button' +
+            (createOpen
+              ? ' projects-page__new-button--open'
+              : '')
+          }
+          onClick={() => {
+            if (createOpen) {
+              closeCreatePanel();
+            } else {
+              setCreateOpen(true);
+              setCreateError(null);
+            }
+          }}
+          aria-expanded={createOpen}
+          aria-controls="new-workspace-panel"
+        >
+          <span aria-hidden="true">
+            {createOpen ? '×' : '+'}
+          </span>
+          {createOpen
+            ? 'Close'
+            : 'New Workspace'}
+        </button>
       </div>
 
-      <div className="projects-layout">
-        <section className="projects-panel">
-          <div className="projects-panel__header">
+      {notice && (
+        <div
+          className="projects-notice"
+          role="status"
+        >
+          ✓ {notice}
+        </div>
+      )}
+
+      {createOpen && (
+        <section
+          className="projects-create-drawer"
+          id="new-workspace-panel"
+        >
+          <div className="projects-create-drawer__header">
             <div>
-              <p className="projects-panel__eyebrow">Open Project</p>
-              <h2>Your Workspaces</h2>
+              <p className="projects-panel__eyebrow">
+                New Workspace
+              </p>
+              <h2>Create Project</h2>
+              <p>
+                Choose a Ship Key once. Spec2Ship
+                automatically builds requirement and
+                test IDs from it.
+              </p>
             </div>
-            <span className="projects-panel__count">
-              {projects?.length ?? 0}
-            </span>
+
+            <button
+              type="button"
+              className="projects-create-drawer__cancel"
+              onClick={closeCreatePanel}
+              disabled={creating}
+            >
+              Cancel
+            </button>
           </div>
 
-          {loading && (
-            <p className="state-message" role="status">
-              Loading projects…
-            </p>
-          )}
-
-          {error && !loading && (
-            <div className="state-message state-message--error" role="alert">
-              {error}
-            </div>
-          )}
-
-          {!loading && !error && projects && (
-            <div className="projects-grid">
-              {projects.map((project) => (
-                <article
-                  className={
-                    'project-card' +
-                    (project.id === selectedProjectId
-                      ? ' project-card--selected'
-                      : '')
+          <form
+            className="project-create-form"
+            onSubmit={handleCreate}
+          >
+            <div className="project-create-form__grid">
+              <label>
+                <span>Project name</span>
+                <input
+                  value={name}
+                  onChange={(event) =>
+                    setName(event.target.value)
                   }
-                  key={project.id}
-                >
-                  <div className="project-card__topline">
-                    <span
-                      className={
-                        project.isDemo
-                          ? 'project-card__badge'
-                          : 'project-card__badge project-card__badge--custom'
-                      }
-                    >
-                      {project.isDemo ? 'Demo' : 'Project'}
-                    </span>
+                  placeholder="e.g. SavoryStack API"
+                  maxLength={100}
+                  required
+                />
+              </label>
 
-                    {project.id === selectedProjectId && (
-                      <span className="project-card__current">
-                        Current
-                      </span>
-                    )}
-                  </div>
+              <label>
+                <span>Ship Key</span>
+                <input
+                  value={shipKey}
+                  onChange={(event) =>
+                    setShipKey(
+                      event.target.value
+                        .toUpperCase()
+                        .replace(/[^A-Z0-9]/g, '')
+                        .slice(0, 8),
+                    )
+                  }
+                  placeholder="e.g. SAV"
+                  minLength={2}
+                  maxLength={8}
+                  pattern="[A-Z][A-Z0-9]{1,7}"
+                  required
+                />
 
-                  <div className="project-card__identity">
-                    <h3>{project.name}</h3>
-                    <code>{project.shipKey}</code>
-                  </div>
-                  <p className="project-card__description">
-                    {project.description || 'No description yet.'}
-                  </p>
+                <small className="project-create-form__help">
+                  2–8 letters or numbers, starting
+                  with a letter.
+                </small>
 
-                  <div className="project-card__stats">
+                {shipKey.length >= 2 && (
+                  <div className="project-create-form__id-preview">
                     <span>
-                      <strong>{project.requirementCount}</strong>
-                      Requirements
+                      Requirement →{' '}
+                      <strong>{shipKey}-1</strong>
                     </span>
                     <span>
-                      <strong>{project.testCount}</strong>
-                      Seeded Tests
+                      Test →{' '}
+                      <strong>{shipKey}-T1</strong>
                     </span>
                   </div>
-
-                  <button
-                    type="button"
-                    className="project-card__open"
-                    onClick={() => openProject(project.id)}
-                  >
-                    Open Project
-                  </button>
-                </article>
-              ))}
+                )}
+              </label>
             </div>
-          )}
-        </section>
-
-        <section className="projects-panel projects-panel--create">
-          <p className="projects-panel__eyebrow">New Workspace</p>
-          <h2>Create Project</h2>
-          <p className="projects-panel__intro">
-            Start blank for your own application, or clone ShopSphere
-            to experiment without changing the built-in demo.
-          </p>
-
-          <form className="project-create-form" onSubmit={handleCreate}>
-            <label>
-              <span>Project name</span>
-              <input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="e.g. SavoryStack API"
-                maxLength={100}
-                required
-              />
-            </label>
-
-            <label>
-              <span>Ship Key</span>
-              <input
-                value={shipKey}
-                onChange={(event) =>
-                  setShipKey(
-                    event.target.value
-                      .toUpperCase()
-                      .replace(/[^A-Z0-9]/g, '')
-                      .slice(0, 8),
-                  )
-                }
-                placeholder="e.g. SAV"
-                minLength={2}
-                maxLength={8}
-                pattern="[A-Z][A-Z0-9]{1,7}"
-                required
-              />
-              <small className="project-create-form__help">
-                Choose this once. Spec2Ship will build IDs from it automatically.
-              </small>
-
-              {shipKey.length >= 2 && (
-                <div className="project-create-form__id-preview">
-                  <span>Requirement → <strong>{shipKey}-1</strong></span>
-                  <span>Test → <strong>{shipKey}-T1</strong></span>
-                </div>
-              )}
-            </label>
 
             <label>
               <span>Description</span>
@@ -246,7 +423,7 @@ export default function ProjectsPage(): React.ReactElement {
                   setDescription(event.target.value)
                 }
                 placeholder="What are you testing?"
-                rows={4}
+                rows={3}
                 maxLength={500}
               />
             </label>
@@ -254,55 +431,407 @@ export default function ProjectsPage(): React.ReactElement {
             <fieldset>
               <legend>Starting point</legend>
 
-              <label className="project-template-option">
-                <input
-                  type="radio"
-                  name="template"
-                  value="blank"
-                  checked={template === 'blank'}
-                  onChange={() => setTemplate('blank')}
-                />
-                <span>
-                  <strong>Blank Project</strong>
-                  Add your own requirements and tests next.
-                </span>
-              </label>
+              <div className="project-create-form__templates">
+                <label className="project-template-option">
+                  <input
+                    type="radio"
+                    name="template"
+                    value="blank"
+                    checked={template === 'blank'}
+                    onChange={() =>
+                      setTemplate('blank')
+                    }
+                  />
 
-              <label className="project-template-option">
-                <input
-                  type="radio"
-                  name="template"
-                  value="shopsphere"
-                  checked={template === 'shopsphere'}
-                  onChange={() => setTemplate('shopsphere')}
-                />
-                <span>
-                  <strong>Clone ShopSphere</strong>
-                  Copy the demo requirements, tests, and traceability.
-                </span>
-              </label>
+                  <span>
+                    <strong>Blank Project</strong>
+                    Add your own requirements and
+                    test evidence.
+                  </span>
+                </label>
+
+                <label className="project-template-option">
+                  <input
+                    type="radio"
+                    name="template"
+                    value="shopsphere"
+                    checked={
+                      template === 'shopsphere'
+                    }
+                    onChange={() =>
+                      setTemplate('shopsphere')
+                    }
+                  />
+
+                  <span>
+                    <strong>Start from Demo</strong>
+                    Copy the sample evidence and remap
+                    it to your Ship Key.
+                  </span>
+                </label>
+              </div>
             </fieldset>
 
             {createError && (
-              <div className="projects-create-error" role="alert">
+              <div
+                className="projects-create-error"
+                role="alert"
+              >
                 {createError}
               </div>
             )}
 
-            <button
-              type="submit"
-              className="project-create-submit"
-              disabled={
-                creating ||
-                !name.trim() ||
-                !/^[A-Z][A-Z0-9]{1,7}$/.test(shipKey)
-              }
-            >
-              {creating ? 'Creating…' : 'Create & Open Project'}
-            </button>
+            <div className="project-create-form__actions">
+              <button
+                type="button"
+                className="project-create-cancel"
+                onClick={closeCreatePanel}
+                disabled={creating}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                className="project-create-submit"
+                disabled={
+                  creating ||
+                  !name.trim() ||
+                  !/^[A-Z][A-Z0-9]{1,7}$/.test(
+                    shipKey,
+                  )
+                }
+              >
+                {creating
+                  ? 'Creating…'
+                  : 'Create & Open Workspace'}
+              </button>
+            </div>
           </form>
         </section>
+      )}
+
+      <div className="projects-layout projects-layout--library">
+        <section className="projects-panel">
+          <div className="projects-panel__header">
+            <div>
+              <p className="projects-panel__eyebrow">
+                Your Workspaces
+              </p>
+              <h2>Projects</h2>
+            </div>
+
+            <span className="projects-panel__count">
+              {customProjects.length}
+            </span>
+          </div>
+
+          {loading && (
+            <p
+              className="state-message"
+              role="status"
+            >
+              Loading projects…
+            </p>
+          )}
+
+          {error && !loading && (
+            <div
+              className="state-message state-message--error"
+              role="alert"
+            >
+              {error}
+            </div>
+          )}
+
+          {!loading &&
+            !error &&
+            customProjects.length === 0 && (
+              <div className="projects-empty">
+                <strong>
+                  No workspaces yet
+                </strong>
+                <p>
+                  Create your first Spec2Ship workspace
+                  to start connecting requirements,
+                  tests, automation, and release evidence.
+                </p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCreateOpen(true)
+                  }
+                >
+                  + New Workspace
+                </button>
+              </div>
+            )}
+
+          {!loading &&
+            !error &&
+            customProjects.length > 0 && (
+              <div className="projects-grid">
+                {customProjects.map((project) => (
+                  <article
+                    className={
+                      'project-card' +
+                      (project.id ===
+                      selectedProjectId
+                        ? ' project-card--selected'
+                        : '')
+                    }
+                    key={project.id}
+                  >
+                    <div className="project-card__topline">
+                      <div className="project-card__identity">
+                        <code>
+                          {project.shipKey}
+                        </code>
+
+                        {project.id ===
+                          selectedProjectId && (
+                          <span className="project-card__current">
+                            Current
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="project-card__menu-wrap">
+                        <button
+                          type="button"
+                          className="project-card__menu-button"
+                          aria-label={
+                            `Workspace actions for ${project.name}`
+                          }
+                          aria-expanded={
+                            openMenuId === project.id
+                          }
+                          onClick={() =>
+                            setOpenMenuId(
+                              openMenuId === project.id
+                                ? null
+                                : project.id,
+                            )
+                          }
+                        >
+                          ⋯
+                        </button>
+
+                        {openMenuId ===
+                          project.id && (
+                          <div className="project-card__menu">
+                            <button
+                              type="button"
+                              className="project-card__delete-action"
+                              onClick={() =>
+                                openDeleteDialog(
+                                  project,
+                                )
+                              }
+                            >
+                              Delete Workspace
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <h3>{project.name}</h3>
+
+                    <p className="project-card__description">
+                      {project.description ||
+                        'No description yet.'}
+                    </p>
+
+                    <div className="project-card__stats">
+                      <span>
+                        <strong>
+                          {project.requirementCount}
+                        </strong>
+                        Requirements
+                      </span>
+                      <span>
+                        <strong>
+                          {project.testCount}
+                        </strong>
+                        Test Cases
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="project-card__open"
+                      onClick={() =>
+                        openProject(project.id)
+                      }
+                    >
+                      Open Workspace
+                    </button>
+                  </article>
+                ))}
+              </div>
+            )}
+        </section>
+
+        <aside className="projects-demo-aside">
+          <details>
+            <summary>
+              <span className="projects-demo-aside__icon">
+                ?
+              </span>
+              <span>
+                <strong>
+                  Learn Spec2Ship
+                </strong>
+                <small>
+                  Need an example?
+                </small>
+              </span>
+            </summary>
+
+            <div className="projects-demo-aside__content">
+              <p>
+                Explore a completed, read-only QA
+                workspace to see how requirements,
+                tests, traceability, risk, and release
+                readiness work together.
+              </p>
+
+              <button
+                type="button"
+                onClick={() =>
+                  openProject(
+                    demoProject?.id ??
+                      'shopsphere-demo',
+                  )
+                }
+              >
+                Explore Demo
+              </button>
+            </div>
+          </details>
+        </aside>
       </div>
+
+      {deleteTarget && (
+        <div
+          className="project-delete-modal"
+          role="presentation"
+        >
+          <section
+            className="project-delete-modal__dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-workspace-title"
+          >
+            <div className="project-delete-modal__danger">
+              !
+            </div>
+
+            <p className="projects-panel__eyebrow">
+              Permanent Action
+            </p>
+
+            <h2 id="delete-workspace-title">
+              Delete workspace?
+            </h2>
+
+            <div className="project-delete-modal__project">
+              <strong>
+                {deleteTarget.name}
+              </strong>
+              <code>
+                {deleteTarget.shipKey}
+              </code>
+            </div>
+
+            <p className="project-delete-modal__warning">
+              This permanently deletes this workspace
+              and its Spec2Ship requirements, test
+              cases, traceability, automation evidence,
+              and release-readiness data. This action
+              cannot be undone.
+            </p>
+
+            <div className="project-delete-modal__counts">
+              <span>
+                <strong>
+                  {deleteTarget.requirementCount}
+                </strong>
+                Requirements
+              </span>
+              <span>
+                <strong>
+                  {deleteTarget.testCount}
+                </strong>
+                Test Cases
+              </span>
+            </div>
+
+            <label className="project-delete-modal__confirm">
+              <span>
+                Type{' '}
+                <strong>
+                  {deleteTarget.shipKey}
+                </strong>{' '}
+                to confirm
+              </span>
+
+              <input
+                type="text"
+                value={deleteKey}
+                onChange={(event) =>
+                  setDeleteKey(
+                    event.target.value
+                      .toUpperCase()
+                      .slice(0, 8),
+                  )
+                }
+                placeholder={
+                  deleteTarget.shipKey
+                }
+                autoFocus
+              />
+            </label>
+
+            {deleteError && (
+              <div
+                className="projects-create-error"
+                role="alert"
+              >
+                {deleteError}
+              </div>
+            )}
+
+            <div className="project-delete-modal__actions">
+              <button
+                type="button"
+                className="project-delete-modal__cancel"
+                onClick={closeDeleteDialog}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="project-delete-modal__delete"
+                onClick={() =>
+                  void handleDelete()
+                }
+                disabled={
+                  !deleteConfirmed ||
+                  deleting
+                }
+              >
+                {deleting
+                  ? 'Deleting…'
+                  : 'Delete Workspace'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </>
   );
 }
