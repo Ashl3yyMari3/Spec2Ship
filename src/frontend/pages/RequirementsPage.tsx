@@ -13,6 +13,8 @@ export default function RequirementsPage(): React.ReactElement {
   const query =
     searchParams.get('search')?.trim().toLowerCase() ?? '';
 
+  const focusId = searchParams.get('focus')?.trim() ?? '';
+
   const filteredRequirements =
     data?.filter((requirement) => {
       if (!query) {
@@ -76,6 +78,7 @@ export default function RequirementsPage(): React.ReactElement {
         filteredRequirements.length > 0 && (
           <RequirementsList
             requirements={filteredRequirements}
+            focusId={focusId}
           />
         )}
 
