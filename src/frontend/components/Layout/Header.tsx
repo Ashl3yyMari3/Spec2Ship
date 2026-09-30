@@ -43,6 +43,7 @@ function OrbitalLogo(): React.ReactElement {
 interface HeaderProject {
   id: string;
   name: string;
+  shipKey: string;
   isDemo: boolean;
 }
 
@@ -84,18 +85,27 @@ export default function Header(): React.ReactElement {
   const {
     selectedProjectId,
     selectProject,
+    closeProject,
   } = useProject();
 
   const { data: project } = useApi<HeaderProject>(
-    `/api/projects/${selectedProjectId}`,
+    selectedProjectId
+      ? `/api/projects/${encodeURIComponent(
+          selectedProjectId,
+        )}`
+      : null,
   );
 
   const [query, setQuery] = useState('');
   const [results, setResults] =
     useState<GlobalSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [workspaceMenuOpen, setWorkspaceMenuOpen] =
+    useState(false);
+
   const searchRef = useRef<HTMLFormElement | null>(null);
+  const workspaceRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -125,7 +135,7 @@ export default function Header(): React.ReactElement {
           (await response.json()) as SearchResponse;
 
         setResults(payload.results);
-        setOpen(true);
+        setSearchOpen(true);
       } catch (error) {
         if (
           !(error instanceof DOMException &&
@@ -144,13 +154,38 @@ export default function Header(): React.ReactElement {
     };
   }, [query]);
 
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent): void {
+      if (
+        workspaceRef.current &&
+        !workspaceRef.current.contains(
+          event.target as Node,
+        )
+      ) {
+        setWorkspaceMenuOpen(false);
+      }
+    }
+
+    document.addEventListener(
+      'mousedown',
+      handlePointerDown,
+    );
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handlePointerDown,
+      );
+    };
+  }, []);
+
   function openResult(
     result: GlobalSearchResult,
   ): void {
     selectProject(result.projectId);
     setQuery('');
     setResults([]);
-    setOpen(false);
+    setSearchOpen(false);
     navigate(result.href);
   }
 
@@ -163,10 +198,16 @@ export default function Header(): React.ReactElement {
 
     if (!trimmed) return;
 
-    setOpen(false);
+    setSearchOpen(false);
     navigate(
       `/search?q=${encodeURIComponent(trimmed)}`,
     );
+  }
+
+  function handleCloseWorkspace(): void {
+    closeProject();
+    setWorkspaceMenuOpen(false);
+    navigate('/');
   }
 
   return (
@@ -198,7 +239,7 @@ export default function Header(): React.ReactElement {
         role="search"
         onSubmit={handleSubmit}
         onFocus={() => {
-          if (query.trim()) setOpen(true);
+          if (query.trim()) setSearchOpen(true);
         }}
         onBlur={() => {
           window.setTimeout(() => {
@@ -207,7 +248,7 @@ export default function Header(): React.ReactElement {
                 document.activeElement,
               )
             ) {
-              setOpen(false);
+              setSearchOpen(false);
             }
           }, 0);
         }}
@@ -230,7 +271,7 @@ export default function Header(): React.ReactElement {
           autoComplete="off"
         />
 
-        {query.trim() && open && (
+        {query.trim() && searchOpen && (
           <div
             className="global-search-dropdown"
             role="listbox"
@@ -303,16 +344,73 @@ export default function Header(): React.ReactElement {
         )}
       </form>
 
-      <Link
-        to="/projects"
-        className="header__project-pill"
-        title="Switch project"
-      >
-        <span className="header__project-pill-label">
-          Current Project
-        </span>
-        <strong>{project?.name ?? 'Loading…'}</strong>
-      </Link>
+      {selectedProjectId ? (
+        <div
+          className="header__workspace-menu-wrap"
+          ref={workspaceRef}
+        >
+          <button
+            type="button"
+            className="header__project-pill"
+            onClick={() =>
+              setWorkspaceMenuOpen((current) => !current)
+            }
+            aria-expanded={workspaceMenuOpen}
+          >
+            <span className="header__project-pill-label">
+              {project?.isDemo
+                ? 'Read-Only Demo'
+                : 'Current Workspace'}
+            </span>
+            <strong>
+              {project
+                ? `${project.name} · ${project.shipKey}`
+                : 'Loading…'}
+            </strong>
+          </button>
+
+          {workspaceMenuOpen && (
+            <div className="header__workspace-menu">
+              <Link
+                to="/projects"
+                onClick={() =>
+                  setWorkspaceMenuOpen(false)
+                }
+              >
+                Switch Workspace
+              </Link>
+
+              <Link
+                to="/project/setup"
+                onClick={() =>
+                  setWorkspaceMenuOpen(false)
+                }
+              >
+                Open Workspace
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleCloseWorkspace}
+              >
+                {project?.isDemo
+                  ? 'Close Demo'
+                  : 'Close Workspace'}
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <Link
+          to="/projects"
+          className="header__project-pill header__project-pill--empty"
+        >
+          <span className="header__project-pill-label">
+            No Workspace Open
+          </span>
+          <strong>Open Workspace</strong>
+        </Link>
+      )}
 
       <span
         className="header__mission-control"
