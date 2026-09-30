@@ -42,6 +42,7 @@ import {
   shipKeyInUse,
   nextRequirementId,
   nextTestCaseIds,
+  deleteProject,
   type ProjectWorkspace,
 } from './services/projectStoreService.js';
 import type {
@@ -263,6 +264,47 @@ export function createApp(): express.Express {
     }
 
     res.json(project);
+  });
+
+
+  app.delete('/api/projects/:projectId', (req, res) => {
+    const project = getProject(req.params.projectId);
+
+    if (!project) {
+      sendMissingProject(res);
+      return;
+    }
+
+    if (project.isDemo || project.id === 'shopsphere-demo') {
+      res.status(403).json({
+        error: 'The built-in ShopSphere demo cannot be deleted.',
+      });
+      return;
+    }
+
+    const { confirmShipKey } = req.body ?? {};
+
+    if (
+      typeof confirmShipKey !== 'string' ||
+      normalizeShipKey(confirmShipKey) !== project.shipKey
+    ) {
+      res.status(400).json({
+        error: `Type the Ship Key ${project.shipKey} to confirm deletion.`,
+      });
+      return;
+    }
+
+    const deleted = deleteProject(project.id);
+
+    if (!deleted) {
+      sendMissingProject(res);
+      return;
+    }
+
+    res.json({
+      deleted: true,
+      project: deleted,
+    });
   });
 
 
