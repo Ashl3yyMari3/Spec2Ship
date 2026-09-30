@@ -1812,3 +1812,6 @@ tbody td {
 .global-search-dropdown__all{width:100%;padding:10px;border:0;background:rgba(49,46,129,.16);color:#c4b5fd;font:inherit;font-size:10px;font-weight:800;cursor:pointer}
 .global-search-dropdown__all:hover{background:rgba(76,29,149,.24)}
 @media(max-width:900px){.global-search-result__type{display:none}}
+
+.card--search-focus{border-color:rgba(34,211,238,.7)!important;box-shadow:var(--shadow-card),0 0 0 2px rgba(34,211,238,.12),0 0 34px rgba(139,92,246,.28)!important;animation:spec2ship-search-focus 1.8s ease-out}
+@keyframes spec2ship-search-focus{0%{transform:translateY(0);filter:brightness(1.35)}45%{transform:translateY(-2px);filter:brightness(1.15)}100%{transform:translateY(0);filter:brightness(1)}}
