@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useProject } from '../../context/ProjectContext';
 
 interface NavItem {
   label: string;
@@ -105,43 +106,66 @@ const IconAI = (
   </svg>
 );
 
-const NAV_ITEMS: NavItem[] = [
-  { label: 'Home',             to: '/',              icon: IconHome },
-  { label: 'Projects',         to: '/projects',      icon: IconProjects },
-  { label: 'Project Setup',    to: '/project/setup', icon: IconSetup },
-  { label: 'Requirements',     to: '/requirements',  icon: IconRequirements },
-  { label: 'Test Cases',       to: '/tests',         icon: IconTestCases },
-  { label: 'Automation Center',to: '/automation',    icon: IconAutomation },
-  { label: 'Traceability',     to: '/traceability',  icon: IconTraceability },
-  { label: 'Coverage Gaps',    to: '/coverage-gaps', icon: IconCoverageGaps },
-  { label: 'Change Impact',    to: '/impact',        icon: IconImpact },
-  { label: 'Risk Dashboard',   to: '/risk',          icon: IconRisk },
-  { label: 'Release Readiness',to: '/report',        icon: IconReport },
-  { label: 'Spec2Ship AI',      to: '/ai',            icon: IconAI },
+const BASE_NAV_ITEMS: NavItem[] = [
+  { label: 'Home', to: '/', icon: IconHome },
+  { label: 'Projects', to: '/projects', icon: IconProjects },
 ];
 
+const WORKSPACE_NAV_ITEMS: NavItem[] = [
+  { label: 'Project Setup', to: '/project/setup', icon: IconSetup },
+  { label: 'Requirements', to: '/requirements', icon: IconRequirements },
+  { label: 'Test Cases', to: '/tests', icon: IconTestCases },
+  { label: 'Automation Center', to: '/automation', icon: IconAutomation },
+  { label: 'Traceability', to: '/traceability', icon: IconTraceability },
+  { label: 'Coverage Gaps', to: '/coverage-gaps', icon: IconCoverageGaps },
+  { label: 'Change Impact', to: '/impact', icon: IconImpact },
+  { label: 'Risk Dashboard', to: '/risk', icon: IconRisk },
+  { label: 'Release Readiness', to: '/report', icon: IconReport },
+  { label: 'Spec2Ship AI', to: '/ai', icon: IconAI },
+];
+
+function NavItems({
+  items,
+}: {
+  items: NavItem[];
+}): React.ReactElement {
+  return (
+    <ul role="list" style={{ listStyle: 'none' }}>
+      {items.map((item) => (
+        <li key={item.to}>
+          <NavLink
+            to={item.to}
+            className={({ isActive }) =>
+              'sidebar__link' +
+              (isActive ? ' sidebar__link--active' : '')
+            }
+            aria-current={undefined}
+            end={item.to === '/'}
+          >
+            {item.icon}
+            <span>{item.label}</span>
+          </NavLink>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default function Sidebar(): React.ReactElement {
+  const { hasOpenProject } = useProject();
+
   return (
     <aside className="layout__sidebar" aria-label="Main navigation">
       <nav className="sidebar__nav">
         <p className="sidebar__label">Navigation</p>
-        <ul role="list" style={{ listStyle: 'none' }}>
-          {NAV_ITEMS.map((item) => (
-            <li key={item.to}>
-              <NavLink
-                to={item.to}
-                className={({ isActive }) =>
-                  'sidebar__link' + (isActive ? ' sidebar__link--active' : '')
-                }
-                aria-current={undefined}
-                end={item.to === '/'}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+        <NavItems items={BASE_NAV_ITEMS} />
+
+        {hasOpenProject && (
+          <>
+            <p className="sidebar__label">Workspace</p>
+            <NavItems items={WORKSPACE_NAV_ITEMS} />
+          </>
+        )}
       </nav>
     </aside>
   );
