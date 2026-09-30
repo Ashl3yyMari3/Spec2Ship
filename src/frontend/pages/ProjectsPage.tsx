@@ -43,6 +43,7 @@ export default function ProjectsPage(): React.ReactElement {
   const {
     selectedProjectId,
     selectProject,
+    closeProject,
   } = useProject();
 
   const [projectList, setProjectList] =
@@ -254,10 +255,7 @@ export default function ProjectsPage(): React.ReactElement {
       );
 
       if (selectedProjectId === deleteTarget.id) {
-        selectProject(
-          remainingProjects[0]?.id ??
-            'shopsphere-demo',
-        );
+        closeProject();
       }
 
       setNotice(
