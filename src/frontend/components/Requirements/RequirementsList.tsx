@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import type { Requirement, Criticality } from '@backend/types/models';
 import AIRequirementAnalysis from './AIRequirementAnalysis';
 
 interface Props {
   requirements: Requirement[];
+  focusId?: string;
 }
 
 function criticalityClass(c: Criticality): string {
@@ -14,7 +15,25 @@ function criticalityLabel(c: Criticality): string {
   return c.charAt(0).toUpperCase() + c.slice(1);
 }
 
-export default function RequirementsList({ requirements }: Props): React.ReactElement {
+export default function RequirementsList({
+  requirements,
+  focusId = '',
+}: Props): React.ReactElement {
+  useEffect(() => {
+    if (!focusId) return;
+
+    const element = document.getElementById(
+      `requirement-card-${focusId}`,
+    );
+
+    if (!element) return;
+
+    element.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+  }, [focusId, requirements]);
+
   if (requirements.length === 0) {
     return (
       <p className="state-message" role="status">
@@ -26,7 +45,17 @@ export default function RequirementsList({ requirements }: Props): React.ReactEl
   return (
     <section aria-label="Requirements list">
       {requirements.map((req) => (
-        <article key={req.id} className="card" aria-labelledby={`req-title-${req.id}`}>
+        <article
+          key={req.id}
+          id={`requirement-card-${req.id}`}
+          className={
+            'card' +
+            (focusId === req.id
+              ? ' card--search-focus'
+              : '')
+          }
+          aria-labelledby={`req-title-${req.id}`}
+        >
           {/* ID pill */}
           <p
             style={{
