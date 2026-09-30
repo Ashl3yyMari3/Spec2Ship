@@ -334,6 +334,18 @@ export function listProjects(): ProjectSummary[] {
   ];
 }
 
+
+export function listProjectWorkspaces(): ProjectWorkspace[] {
+  requireInitialized();
+
+  return [
+    clone(demoProject as ProjectWorkspace),
+    ...[...customProjects.values()]
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .map((project) => clone(project)),
+  ];
+}
+
 export function getProject(
   projectId?: string | null,
 ): ProjectWorkspace | null {
