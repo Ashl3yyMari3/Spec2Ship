@@ -152,7 +152,7 @@ export default function HomePage(): React.ReactElement {
         <div className="home-section__heading">
           <div>
             <p className="home-eyebrow">
-              Current Project
+              Current Workspace
             </p>
             <h2>Release Snapshot</h2>
           </div>
@@ -209,7 +209,7 @@ export default function HomePage(): React.ReactElement {
               </>
             ) : (
               <div className="home-empty">
-                <strong>No project selected</strong>
+                <strong>No workspace open</strong>
                 <p>
                   Open a workspace to see its release snapshot.
                 </p>
