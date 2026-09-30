@@ -14,6 +14,7 @@ import ProjectSetupPage from './pages/ProjectSetupPage';
 import AutomationCenterPage from './pages/AutomationCenterPage';
 import HomePage from './pages/HomePage';
 import SearchResultsPage from './pages/SearchResultsPage';
+import RequireWorkspace from './components/Layout/RequireWorkspace';
 import { ProjectProvider } from './context/ProjectContext';
 import { CopilotProvider } from './context/CopilotContext';
 
@@ -27,19 +28,82 @@ export default function App(): React.ReactElement {
           <Route index element={<HomePage />} />
 
           {/* Implemented pages */}
-          <Route path="/requirements" element={<RequirementsPage />} />
-          <Route path="/tests" element={<TestsPage />} />
+          <Route
+            path="/requirements"
+            element={
+              <RequireWorkspace>
+                <RequirementsPage />
+              </RequireWorkspace>
+            }
+          />
+          <Route
+            path="/tests"
+            element={
+              <RequireWorkspace>
+                <TestsPage />
+              </RequireWorkspace>
+            }
+          />
 
           {/* Placeholder pages — to be implemented in later tasks */}
-          <Route path="/traceability" element={<TraceabilityPage />} />
-          <Route path="/coverage-gaps" element={<CoverageGapsPage />} />
-          <Route path="/impact" element={<ImpactPage />} />
-          <Route path="/risk" element={<RiskPage />} />
-          <Route path="/report" element={<ReportPage />} />
+          <Route
+            path="/traceability"
+            element={
+              <RequireWorkspace>
+                <TraceabilityPage />
+              </RequireWorkspace>
+            }
+          />
+          <Route
+            path="/coverage-gaps"
+            element={
+              <RequireWorkspace>
+                <CoverageGapsPage />
+              </RequireWorkspace>
+            }
+          />
+          <Route
+            path="/impact"
+            element={
+              <RequireWorkspace>
+                <ImpactPage />
+              </RequireWorkspace>
+            }
+          />
+          <Route
+            path="/risk"
+            element={
+              <RequireWorkspace>
+                <RiskPage />
+              </RequireWorkspace>
+            }
+          />
+          <Route
+            path="/report"
+            element={
+              <RequireWorkspace>
+                <ReportPage />
+              </RequireWorkspace>
+            }
+          />
           <Route path="/ai" element={<CopilotPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
-          <Route path="/project/setup" element={<ProjectSetupPage />} />
-          <Route path="/automation" element={<AutomationCenterPage />} />
+          <Route
+            path="/project/setup"
+            element={
+              <RequireWorkspace>
+                <ProjectSetupPage />
+              </RequireWorkspace>
+            }
+          />
+          <Route
+            path="/automation"
+            element={
+              <RequireWorkspace>
+                <AutomationCenterPage />
+              </RequireWorkspace>
+            }
+          />
           <Route path="/search" element={<SearchResultsPage />} />
         </Route>
       </Routes>
