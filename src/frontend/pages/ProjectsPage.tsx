@@ -238,11 +238,6 @@ export default function ProjectsPage(): React.ReactElement {
         );
       }
 
-      const remainingProjects = customProjects.filter(
-        (project) =>
-          project.id !== deleteTarget.id,
-      );
-
       setProjectList((current) =>
         current.filter(
           (project) =>
