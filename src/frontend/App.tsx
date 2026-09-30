@@ -13,6 +13,7 @@ import ProjectsPage from './pages/ProjectsPage';
 import ProjectSetupPage from './pages/ProjectSetupPage';
 import AutomationCenterPage from './pages/AutomationCenterPage';
 import HomePage from './pages/HomePage';
+import SearchResultsPage from './pages/SearchResultsPage';
 import { ProjectProvider } from './context/ProjectContext';
 import { CopilotProvider } from './context/CopilotContext';
 
@@ -39,6 +40,7 @@ export default function App(): React.ReactElement {
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/project/setup" element={<ProjectSetupPage />} />
           <Route path="/automation" element={<AutomationCenterPage />} />
+          <Route path="/search" element={<SearchResultsPage />} />
         </Route>
       </Routes>
         </BrowserRouter>
