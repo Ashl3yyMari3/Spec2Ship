@@ -1815,3 +1815,14 @@ tbody td {
 
 .card--search-focus{border-color:rgba(34,211,238,.7)!important;box-shadow:var(--shadow-card),0 0 0 2px rgba(34,211,238,.12),0 0 34px rgba(139,92,246,.28)!important;animation:spec2ship-search-focus 1.8s ease-out}
 @keyframes spec2ship-search-focus{0%{transform:translateY(0);filter:brightness(1.35)}45%{transform:translateY(-2px);filter:brightness(1.15)}100%{transform:translateY(0);filter:brightness(1)}}
+
+.header__workspace-menu-wrap{position:relative;flex:0 0 auto}
+button.header__project-pill{font:inherit;text-align:left;cursor:pointer}
+.header__project-pill--empty{border-style:dashed;background:rgba(15,23,42,.42);color:#cbd5e1}
+.header__project-pill--empty .header__project-pill-label{color:rgba(148,163,184,.72)}
+.header__workspace-menu{position:absolute;top:calc(100% + 8px);right:0;z-index:500;display:grid;min-width:190px;padding:6px;border:1px solid rgba(139,92,246,.24);border-radius:11px;background:linear-gradient(160deg,rgba(9,13,34,.99),rgba(24,15,55,.99));box-shadow:0 18px 45px rgba(0,0,0,.45),0 0 20px rgba(139,92,246,.1)}
+.header__workspace-menu a,.header__workspace-menu button{display:block;width:100%;border:0;border-radius:8px;padding:9px 10px;background:transparent;color:#cbd5e1;text-align:left;text-decoration:none;font:inherit;font-size:10px;font-weight:750;cursor:pointer}
+.header__workspace-menu a:hover,.header__workspace-menu button:hover{background:rgba(76,29,149,.18);color:#f8fafc}
+.header__workspace-menu button{margin-top:4px;border-top:1px solid rgba(148,163,184,.1);border-radius:0 0 8px 8px;color:#fca5a5}
+.header__workspace-menu button:hover{background:rgba(127,29,29,.16);color:#fecaca}
+@media(max-width:980px){.header__workspace-menu-wrap{display:none}}
