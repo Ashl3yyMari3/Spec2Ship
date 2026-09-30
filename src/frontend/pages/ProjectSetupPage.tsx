@@ -81,12 +81,20 @@ export default function ProjectSetupPage(): React.ReactElement {
   const [testError, setTestError] = useState<string | null>(null);
 
   async function loadProject(): Promise<void> {
+    const projectId = selectedProjectId;
+
+    if (!projectId) {
+      setProject(null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setPageError(null);
 
     try {
       const response = await fetch(
-        `/api/projects/${encodeURIComponent(selectedProjectId)}`,
+        `/api/projects/${encodeURIComponent(projectId)}`,
       );
 
       if (!response.ok) {
