@@ -391,3 +391,101 @@ describe('AI project test workflow guardrails', () => {
     expect(second.body.error).toContain('KEYX');
   });
 });
+
+
+describe('GET /api/search', () => {
+  it('finds an exact requirement ID in global search', async () => {
+    const res = await request(app)
+      .get('/api/search')
+      .query({ q: 'REQ-AUTH-003' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.query).toBe('REQ-AUTH-003');
+
+    const result = res.body.results.find(
+      (item: {
+        type: string;
+        entityId: string;
+      }) =>
+        item.type === 'requirement' &&
+        item.entityId === 'REQ-AUTH-003',
+    );
+
+    expect(result).toBeDefined();
+    expect(result.projectId).toBe('shopsphere-demo');
+  });
+
+  it('finds a project by Ship Key', async () => {
+    const res = await request(app)
+      .get('/api/search')
+      .query({ q: 'SHOP' });
+
+    expect(res.status).toBe(200);
+
+    const project = res.body.results.find(
+      (item: {
+        type: string;
+        shipKey: string;
+      }) =>
+        item.type === 'project' &&
+        item.shipKey === 'SHOP',
+    );
+
+    expect(project).toBeDefined();
+    expect(project.projectName).toBe('ShopSphere Demo');
+  });
+
+  it('finds an auto-numbered custom test by exact ID', async () => {
+    const projectRes = await request(app)
+      .post('/api/projects')
+      .send({
+        name: 'Global Search Fixture',
+        shipKey: 'GSF',
+        template: 'blank',
+      });
+
+    expect(projectRes.status).toBe(201);
+
+    const projectId = projectRes.body.id as string;
+
+    const requirementRes = await request(app)
+      .post(`/api/projects/${projectId}/requirements`)
+      .send({
+        title: 'Searchable requirement',
+        description: 'Used to verify cross-workspace global search.',
+        acceptanceCriteria: ['The record can be found by ID.'],
+        domain: 'search',
+        criticality: 'medium',
+        changed: false,
+      });
+
+    expect(requirementRes.status).toBe(201);
+
+    const testRes = await request(app)
+      .post(`/api/projects/${projectId}/tests`)
+      .send({
+        title: 'Searchable test case',
+        description: 'This test should be discoverable as GSF-T1.',
+        type: 'functional',
+        requirementIds: ['GSF-1'],
+        status: 'pass',
+        automated: false,
+        coverageType: 'full',
+      });
+
+    expect(testRes.status).toBe(201);
+    expect(testRes.body.testCaseId).toBe('GSF-T1');
+
+    const searchRes = await request(app)
+      .get('/api/search')
+      .query({ q: 'GSF-T1' });
+
+    expect(searchRes.status).toBe(200);
+    expect(searchRes.body.results[0]).toMatchObject({
+      type: 'test',
+      projectId,
+      entityId: 'GSF-T1',
+      shipKey: 'GSF',
+    });
+  });
+});
