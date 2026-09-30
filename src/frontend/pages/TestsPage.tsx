@@ -1,10 +1,13 @@
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { TestCase } from '@backend/types/models';
 import { useApi } from '../hooks/useApi';
 import TestCasesList from '../components/TestCases/TestCasesList';
 
 export default function TestsPage(): React.ReactElement {
   const { data, loading, error } = useApi<TestCase[]>('/api/tests');
+  const [searchParams] = useSearchParams();
+  const focusId = searchParams.get('focus')?.trim() ?? '';
 
   return (
     <>
@@ -29,7 +32,7 @@ export default function TestsPage(): React.ReactElement {
       )}
 
       {!loading && !error && data !== null && (
-        <TestCasesList tests={data} />
+        <TestCasesList tests={data} focusId={focusId} />
       )}
     </>
   );
