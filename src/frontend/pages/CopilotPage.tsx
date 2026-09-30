@@ -6,11 +6,18 @@ import React, {
 import '../styles/copilot.css';
 import { useCopilot } from '../context/CopilotContext';
 
-const SUGGESTED_QUESTIONS = [
+const PROJECT_QUESTIONS = [
   'Why is this release Review Required?',
   'Which requirement has the highest risk?',
   'What testing gaps should I focus on first?',
   'What would need to change for this release to be Ready?',
+];
+
+const ONBOARDING_QUESTIONS = [
+  'How do I create a workspace?',
+  'How do I explore the demo?',
+  'How do I find a project or test?',
+  'What does Spec2Ship do?',
 ];
 
 export default function CopilotPage(): React.ReactElement {
@@ -18,11 +25,16 @@ export default function CopilotPage(): React.ReactElement {
     messages,
     loading,
     error,
+    projectAware,
     askQuestion,
     clearConversation,
   } = useCopilot();
 
   const [input, setInput] = useState('');
+
+  const suggestedQuestions = projectAware
+    ? PROJECT_QUESTIONS
+    : ONBOARDING_QUESTIONS;
 
   async function send(): Promise<void> {
     const question = input.trim();
@@ -59,9 +71,9 @@ export default function CopilotPage(): React.ReactElement {
           ✦ Spec2Ship AI
         </h1>
         <p className="page-header__subtitle">
-          Ask questions about the current project using Spec2Ship’s
-          traceability, coverage, automation, risk, change-impact, and
-          release-readiness evidence.
+          {projectAware
+            ? 'Ask questions about the current workspace using Spec2Ship’s traceability, coverage, automation, risk, change-impact, and release-readiness evidence.'
+            : 'No workspace is open. Use Spec2Ship AI to get started, find a workspace, explore the demo, or learn how the workflow fits together.'}
         </p>
       </div>
 
@@ -74,7 +86,11 @@ export default function CopilotPage(): React.ReactElement {
             className="copilot-status__dot"
             aria-hidden="true"
           />
-          <span>Project-aware · Read-only</span>
+          <span>
+            {projectAware
+              ? 'Project-aware · Read-only'
+              : 'Getting started · No workspace context'}
+          </span>
 
           <button
             type="button"
@@ -101,7 +117,7 @@ export default function CopilotPage(): React.ReactElement {
             className="copilot-suggestions"
             aria-label="Suggested questions"
           >
-            {SUGGESTED_QUESTIONS.map((question) => (
+            {suggestedQuestions.map((question) => (
               <button
                 type="button"
                 className="copilot-suggestion"
@@ -143,7 +159,9 @@ export default function CopilotPage(): React.ReactElement {
                 ✦ Spec2Ship AI
               </div>
               <div className="copilot-message__content copilot-message__thinking">
-                Reviewing project evidence…
+                {projectAware
+                  ? 'Reviewing project evidence…'
+                  : 'Getting started…'}
               </div>
             </article>
           )}
@@ -174,7 +192,11 @@ export default function CopilotPage(): React.ReactElement {
               setInput(event.target.value)
             }
             onKeyDown={handleKeyDown}
-            placeholder="Ask why the release needs review, what to test next, where risk exists…"
+            placeholder={
+              projectAware
+                ? 'Ask why the release needs review, what to test next, where risk exists…'
+                : 'Ask how to get started with Spec2Ship…'
+            }
             rows={3}
             maxLength={2000}
             disabled={loading}
