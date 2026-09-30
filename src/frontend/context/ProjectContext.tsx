@@ -46,6 +46,7 @@ export function ProjectProvider({
       projectApiUrl: (url: string) => {
         if (!url.startsWith('/api/')) return url;
         if (url.startsWith('/api/projects')) return url;
+        if (url.startsWith('/api/search')) return url;
 
         const separator = url.includes('?') ? '&' : '?';
 
