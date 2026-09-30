@@ -29,11 +29,13 @@ import { computeAllRiskScores } from './services/riskService.js';
 import { buildReleaseReadinessReport } from './services/reportService.js';
 import { analyzeRequirement } from './services/aiRequirementService.js';
 import { askSpec2ShipCopilot } from './services/aiCopilotService.js';
+import { searchProjects } from './services/globalSearchService.js';
 import {
   createProject,
   getProject,
   initializeProjectStore,
   listProjects,
+  listProjectWorkspaces,
   saveProject,
   isValidShipKey,
   normalizeShipKey,
@@ -163,6 +165,49 @@ export function createApp(): express.Express {
 
   app.get('/api/projects', (_req, res) => {
     res.json(listProjects());
+  });
+
+
+  app.get('/api/search', (req, res) => {
+    const query =
+      typeof req.query.q === 'string'
+        ? req.query.q.trim()
+        : '';
+
+    if (!query) {
+      res.json({
+        query: '',
+        results: [],
+      });
+      return;
+    }
+
+    if (query.length > 120) {
+      res.status(400).json({
+        error: 'Search query must be 120 characters or fewer.',
+      });
+      return;
+    }
+
+    const limitValue =
+      typeof req.query.limit === 'string'
+        ? Number(req.query.limit)
+        : 30;
+
+    const limit = Number.isFinite(limitValue)
+      ? Math.min(Math.max(Math.floor(limitValue), 1), 50)
+      : 30;
+
+    const results = searchProjects(
+      listProjectWorkspaces(),
+      query,
+      limit,
+    );
+
+    res.json({
+      query,
+      results,
+    });
   });
 
   app.post('/api/projects', (req, res) => {
