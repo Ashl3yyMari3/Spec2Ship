@@ -161,7 +161,11 @@ export default function AutomationCenterPage(): React.ReactElement {
     loading,
     error,
   } = useApi<ProjectWorkspace>(
-    `/api/projects/${encodeURIComponent(selectedProjectId)}`,
+    selectedProjectId
+      ? `/api/projects/${encodeURIComponent(
+          selectedProjectId,
+        )}`
+      : null,
   );
 
   const [tests, setTests] = useState<ImportedAutomationTest[]>([]);
