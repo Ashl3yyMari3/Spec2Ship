@@ -489,3 +489,67 @@ describe('GET /api/search', () => {
     });
   });
 });
+
+
+describe('DELETE /api/projects/:projectId', () => {
+  it('requires the matching Ship Key before deleting a workspace', async () => {
+    const projectRes = await request(app)
+      .post('/api/projects')
+      .send({
+        name: 'Deletion Confirmation Test',
+        shipKey: 'DEL',
+        template: 'blank',
+      });
+
+    expect(projectRes.status).toBe(201);
+
+    const projectId = projectRes.body.id as string;
+
+    const wrongKey = await request(app)
+      .delete(`/api/projects/${projectId}`)
+      .send({
+        confirmShipKey: 'WRONG',
+      });
+
+    expect(wrongKey.status).toBe(400);
+    expect(wrongKey.body.error).toContain('DEL');
+
+    const stillExists = await request(app)
+      .get(`/api/projects/${projectId}`);
+
+    expect(stillExists.status).toBe(200);
+
+    const deleted = await request(app)
+      .delete(`/api/projects/${projectId}`)
+      .send({
+        confirmShipKey: 'del',
+      });
+
+    expect(deleted.status).toBe(200);
+    expect(deleted.body).toMatchObject({
+      deleted: true,
+      project: {
+        id: projectId,
+        shipKey: 'DEL',
+      },
+    });
+
+    const missing = await request(app)
+      .get(`/api/projects/${projectId}`);
+
+    expect(missing.status).toBe(404);
+  });
+
+  it('does not allow the built-in demo to be deleted', async () => {
+    const res = await request(app)
+      .delete('/api/projects/shopsphere-demo')
+      .send({
+        confirmShipKey: 'SHOP',
+      });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain(
+      'cannot be deleted',
+    );
+  });
+});
