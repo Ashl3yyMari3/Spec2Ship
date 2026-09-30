@@ -595,3 +595,27 @@ export function saveProject(
 
   return clone(next);
 }
+
+
+export function deleteProject(
+  projectId: string,
+): ProjectSummary | null {
+  requireInitialized();
+
+  if (projectId === 'shopsphere-demo') {
+    throw new Error(
+      'The built-in ShopSphere demo cannot be deleted.',
+    );
+  }
+
+  const project = customProjects.get(projectId);
+
+  if (!project) {
+    return null;
+  }
+
+  customProjects.delete(projectId);
+  persistCustomProjects();
+
+  return summary(project);
+}
