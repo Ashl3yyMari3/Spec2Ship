@@ -40,13 +40,25 @@ export default function HomePage(): React.ReactElement {
   const {
     data: release,
     loading: releaseLoading,
-  } = useApi<ReleaseReadinessReport>('/api/release-readiness');
+  } = useApi<ReleaseReadinessReport>(
+    selectedProjectId
+      ? '/api/release-readiness'
+      : null,
+  );
 
   const { data: riskScores } =
-    useApi<RiskScore[]>('/api/risk');
+    useApi<RiskScore[]>(
+      selectedProjectId
+        ? '/api/risk'
+        : null,
+    );
 
   const { data: tests } =
-    useApi<TestCase[]>('/api/tests');
+    useApi<TestCase[]>(
+      selectedProjectId
+        ? '/api/tests'
+        : null,
+    );
 
   const currentProject = useMemo(
     () =>
@@ -209,21 +221,32 @@ export default function HomePage(): React.ReactElement {
           <article className="home-release-card">
             <div className="home-release-card__header">
               <span>Release Verdict</span>
-              {!releaseLoading && release && (
-                <strong
-                  className={
-                    'home-verdict ' +
-                    verdictClass(
-                      release.overallVerdict,
-                    )
-                  }
-                >
-                  {release.overallVerdict}
-                </strong>
-              )}
+              {selectedProjectId &&
+                !releaseLoading &&
+                release && (
+                  <strong
+                    className={
+                      'home-verdict ' +
+                      verdictClass(
+                        release.overallVerdict,
+                      )
+                    }
+                  >
+                    {release.overallVerdict}
+                  </strong>
+                )}
             </div>
 
-            {releaseLoading ? (
+            {!selectedProjectId ? (
+              <div className="home-empty">
+                <strong>No workspace is currently open</strong>
+                <p>
+                  Open a workspace to see its coverage, test execution,
+                  risk, and release-readiness evidence.
+                </p>
+                <Link to="/projects">Open Workspace</Link>
+              </div>
+            ) : releaseLoading ? (
               <p className="home-muted">
                 Calculating release evidence…
               </p>
@@ -351,30 +374,6 @@ export default function HomePage(): React.ReactElement {
             ))}
           </div>
 
-          {projects && (
-            <button
-              type="button"
-              className="home-project-row home-project-row--demo"
-              onClick={() =>
-                openProject('shopsphere-demo')
-              }
-            >
-              <span className="home-project-row__key">
-                SHOP
-              </span>
-
-              <span className="home-project-row__copy">
-                <strong>ShopSphere Demo</strong>
-                <small>
-                  Built-in read-only sample workspace
-                </small>
-              </span>
-
-              <span className="home-project-row__arrow">
-                →
-              </span>
-            </button>
-          )}
         </section>
 
         <section className="home-section home-section--quick">
@@ -388,41 +387,57 @@ export default function HomePage(): React.ReactElement {
           </div>
 
           <div className="home-quick-actions">
-            <Link to="/project/setup">
-              <span className="home-quick-actions__icon">
-                ◈
-              </span>
-              <span>
-                <strong>Project Setup</strong>
-                <small>
-                  Add requirements and test evidence
-                </small>
-              </span>
-            </Link>
+            {selectedProjectId ? (
+              <>
+                <Link to="/project/setup">
+                  <span className="home-quick-actions__icon">
+                    ◈
+                  </span>
+                  <span>
+                    <strong>Project Setup</strong>
+                    <small>
+                      Add requirements and test evidence
+                    </small>
+                  </span>
+                </Link>
 
-            <Link to="/automation">
-              <span className="home-quick-actions__icon">
-                ⚡
-              </span>
-              <span>
-                <strong>Import Automation</strong>
-                <small>
-                  Bring in Playwright run results
-                </small>
-              </span>
-            </Link>
+                <Link to="/automation">
+                  <span className="home-quick-actions__icon">
+                    ⚡
+                  </span>
+                  <span>
+                    <strong>Import Automation</strong>
+                    <small>
+                      Bring in Playwright run results
+                    </small>
+                  </span>
+                </Link>
 
-            <Link to="/risk">
-              <span className="home-quick-actions__icon">
-                △
-              </span>
-              <span>
-                <strong>Risk Dashboard</strong>
-                <small>
-                  Review weighted requirement risk
-                </small>
-              </span>
-            </Link>
+                <Link to="/risk">
+                  <span className="home-quick-actions__icon">
+                    △
+                  </span>
+                  <span>
+                    <strong>Risk Dashboard</strong>
+                    <small>
+                      Review weighted requirement risk
+                    </small>
+                  </span>
+                </Link>
+              </>
+            ) : (
+              <Link to="/projects">
+                <span className="home-quick-actions__icon">
+                  ◈
+                </span>
+                <span>
+                  <strong>Open Workspace</strong>
+                  <small>
+                    Choose a project or create a new one
+                  </small>
+                </span>
+              </Link>
+            )}
 
             <Link to="/ai">
               <span className="home-quick-actions__icon">
@@ -431,7 +446,9 @@ export default function HomePage(): React.ReactElement {
               <span>
                 <strong>Open Spec2Ship AI</strong>
                 <small>
-                  Ask questions about QA evidence
+                  {selectedProjectId
+                    ? 'Ask questions about QA evidence'
+                    : 'Get help getting started'}
                 </small>
               </span>
             </Link>
