@@ -15,6 +15,7 @@ import AutomationCenterPage from './pages/AutomationCenterPage';
 import HomePage from './pages/HomePage';
 import SearchResultsPage from './pages/SearchResultsPage';
 import RequireWorkspace from './components/Layout/RequireWorkspace';
+import SignInPage from './pages/SignInPage';
 import { ProjectProvider } from './context/ProjectContext';
 import { CopilotProvider } from './context/CopilotContext';
 
@@ -24,6 +25,8 @@ export default function App(): React.ReactElement {
       <CopilotProvider>
         <BrowserRouter>
       <Routes>
+        <Route path="/sign-in" element={<SignInPage />} />
+
         <Route element={<AppLayout />}>
           <Route index element={<HomePage />} />
 
