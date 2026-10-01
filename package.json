@@ -16,6 +16,8 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@clerk/express": "^2.1.74",
+    "@clerk/react": "^6.15.2",
     "@google/genai": "^2.24.0",
     "cors": "^2.8.5",
     "dotenv": "^18.0.4",
