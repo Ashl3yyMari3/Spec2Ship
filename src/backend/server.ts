@@ -12,6 +12,7 @@ import express from 'express';
 import type { Request } from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import { clerkMiddleware, getAuth } from '@clerk/express';
 
 import {
   loadRequirements,
@@ -52,6 +53,14 @@ import type {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const clerkConfigured = Boolean(
+  process.env.CLERK_SECRET_KEY?.trim() &&
+  (
+    process.env.CLERK_PUBLISHABLE_KEY?.trim() ||
+    process.env.VITE_CLERK_PUBLISHABLE_KEY?.trim()
+  ),
+);
 
 // ---------------------------------------------------------------------------
 // Built-in demo data
@@ -135,6 +144,10 @@ function sendMissingProject(res: express.Response): void {
 export function createApp(): express.Express {
   const app = express();
 
+  if (clerkConfigured) {
+    app.use(clerkMiddleware());
+  }
+
   if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
   }
@@ -158,6 +171,26 @@ export function createApp(): express.Express {
     windowMs: 60_000,
     limit: 20,
     legacyHeaders: false,
+  });
+
+
+  app.get('/api/auth/status', (req, res) => {
+    if (!clerkConfigured) {
+      res.json({
+        configured: false,
+        isAuthenticated: false,
+        userId: null,
+      });
+      return;
+    }
+
+    const auth = getAuth(req);
+
+    res.json({
+      configured: true,
+      isAuthenticated: auth.isAuthenticated,
+      userId: auth.userId ?? null,
+    });
   });
 
   // ------------------------------------------------------------------
