@@ -7,6 +7,7 @@ import React, {
 import { Link, useNavigate } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
 import { useApi } from '../../hooks/useApi';
+import { UserButton } from '@clerk/react';
 
 function OrbitalLogo(): React.ReactElement {
   return (
@@ -418,6 +419,7 @@ export default function Header(): React.ReactElement {
       >
         QA Mission Control
       </span>
+      <UserButton />
     </header>
   );
 }

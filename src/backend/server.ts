@@ -152,6 +152,14 @@ export function createApp(): express.Express {
     app.set('trust proxy', 1);
   }
 
+  // Clerk authentication runs in the real application,
+  // but not during the existing API integration test suite.
+  if (process.env.NODE_ENV !== 'test') {
+    app.use(clerkMiddleware());
+  }
+
+  // CORS is only needed for local development because production
+  // serves the frontend and API from the same origin.
   if (process.env.NODE_ENV !== 'production') {
     app.use(
       cors({
@@ -166,6 +174,15 @@ export function createApp(): express.Express {
   }
 
   app.use(express.json());
+
+  app.get('/api/auth/status', (req, res) => {
+  const { isAuthenticated, userId } = getAuth(req);
+
+  res.json({
+    authenticated: isAuthenticated,
+    userId: userId ?? null,
+  });
+});
 
   const aiRateLimiter = rateLimit({
     windowMs: 60_000,
