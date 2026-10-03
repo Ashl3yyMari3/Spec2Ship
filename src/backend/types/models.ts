@@ -101,6 +101,12 @@ export interface CoverageGapReport {
   coveredCount: number;
   gapCount: number;
   gaps: CoverageGap[];
+
+  fullCount: number;
+  partialCount: number;
+  noneCount: number;
+
+  evaluations: RequirementCoverageEvaluation[];
 }
 
 // ---------------------------------------------------------------------------
@@ -146,6 +152,19 @@ export interface RiskScore {
 
 export type ReleaseVerdict = 'Ready' | 'Review Required' | 'Not Ready';
 export type CoverageStatus = 'full' | 'partial' | 'none';
+
+export interface RequirementCoverageEvaluation {
+  requirementId: string;
+  status: CoverageStatus;
+
+  totalCriteria: number;
+  coveredCriteriaCount: number;
+
+  coveredCriteriaIndexes: number[];
+  uncoveredCriteriaIndexes: number[];
+
+  linkedTestIds: string[];
+}
 
 export interface RequirementStatus {
   requirement: Requirement;

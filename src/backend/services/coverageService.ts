@@ -6,6 +6,7 @@
  *   no_executed_coverage   — all linked tests have status not_run or blocked
  *   missing_test_types     — no linked test covers "negative" or "boundary" type (informational)
  */
+import { computeRequirementCoverage } from './requirementCoverageService.js';
 import type {
   Requirement, TestCase, TraceabilityLink,
   CoverageGap, CoverageGapReport,
@@ -17,6 +18,13 @@ export function computeCoverageGaps(
   links: TraceabilityLink[],
 ): CoverageGapReport {
   const tcById = new Map(testCases.map((tc) => [tc.id, tc]));
+  const evaluations = requirements.map((req) =>
+  computeRequirementCoverage(req, testCases, links),
+);
+
+  const fullCount = evaluations.filter((e) => e.status === 'full').length;
+  const partialCount = evaluations.filter((e) => e.status === 'partial').length;
+  const noneCount = evaluations.filter((e) => e.status === 'none').length;
 
   // Build map: requirementId -> linked TestCase[]
   const reqTests = new Map<string, TestCase[]>();
@@ -86,9 +94,15 @@ export function computeCoverageGaps(
   const actualCovered = requirements.length - notCovered;
 
   return {
-    totalRequirements: requirements.length,
-    coveredCount: actualCovered,
-    gapCount: gaps.length,
-    gaps,
-  };
+  totalRequirements: requirements.length,
+  coveredCount: actualCovered,
+  gapCount: gaps.length,
+  gaps,
+
+  fullCount,
+  partialCount,
+  noneCount,
+
+  evaluations,
+};
 }
