@@ -166,6 +166,31 @@ export interface RequirementCoverageEvaluation {
   linkedTestIds: string[];
 }
 
+export type AICoverageSuggestionPriority = 'low' | 'medium' | 'high';
+
+export interface AICoverageSuggestion {
+  title: string;
+  description: string;
+  type: TestType;
+  acceptanceCriteriaIndexes: number[];
+  reason: string;
+  priority: AICoverageSuggestionPriority;
+  assumption: string | null;
+}
+
+export interface AICoverageAnalysis {
+  requirementId: string;
+  coverageStatus: CoverageStatus;
+  totalCriteria: number;
+  coveredCriteriaCount: number;
+  uncoveredCriteria: {
+    criterionIndex: number;
+    criterion: string;
+  }[];
+  summary: string;
+  suggestions: AICoverageSuggestion[];
+}
+
 export interface RequirementStatus {
   requirement: Requirement;
   riskScore: number;
