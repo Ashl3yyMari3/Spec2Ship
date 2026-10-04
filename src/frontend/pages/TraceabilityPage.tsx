@@ -25,9 +25,9 @@ export default function TraceabilityPage(): React.ReactElement {
   return (
     <>
       <div className="page-header">
-        <h1 className="page-header__title">Traceability Matrix</h1>
+        <h1 className="page-header__title">Traceability</h1>
         <p className="page-header__subtitle">
-          Maps requirements to their associated test cases and acceptance criteria coverage
+          Explore requirement-to-test relationships, inspect acceptance-criteria mappings, and switch to the matrix only when you need the full grid.
         </p>
       </div>
 
