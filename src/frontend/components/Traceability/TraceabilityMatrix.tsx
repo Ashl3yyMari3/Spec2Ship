@@ -525,12 +525,6 @@ function MatrixView({
   requirements: Requirement[];
   matrix: TraceabilityMatrix;
 }): React.ReactElement {
-  const visibleReqIds = new Set(
-    requirements.map(
-      (requirement) => requirement.id,
-    ),
-  );
-
   const relevantTestIds = new Set<string>();
 
   for (const requirement of requirements) {
