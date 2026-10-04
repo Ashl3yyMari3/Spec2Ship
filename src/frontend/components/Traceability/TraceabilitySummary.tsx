@@ -193,12 +193,12 @@ export default function TraceabilitySummary({
         value={metrics.totalTestCases}
       />
       <MetricCard
-        label="Mapped Requirements"
+        label="Requirements with Tests"
         value={metrics.mappedRequirements}
         variant="success"
       />
       <MetricCard
-        label="Unmapped Requirements"
+        label="Requirements without Tests"
         value={metrics.unmappedRequirements}
         variant={
           metrics.unmappedRequirements > 0
@@ -207,7 +207,7 @@ export default function TraceabilitySummary({
         }
       />
       <MetricCard
-        label="Unmapped Tests"
+        label="Tests without Requirements"
         value={metrics.orphanTests}
         variant={
           metrics.orphanTests > 0
