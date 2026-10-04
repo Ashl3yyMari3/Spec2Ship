@@ -1125,17 +1125,20 @@ export function createApp(): express.Express {
           return;
         }
 
+        const acceptanceCriteriaIndexes =
+          Array.from(
+            new Set<number>(
+              (
+                item.acceptanceCriteriaIndexes as unknown[]
+              ).map((index) => Number(index)),
+            ),
+          ).sort((a, b) => a - b);
+
         normalized.push({
           title: item.title.trim(),
           description: item.description.trim(),
           type: item.type,
-          acceptanceCriteriaIndexes: [
-            ...new Set(
-              item.acceptanceCriteriaIndexes.map(
-                (index: number) => Number(index),
-              ),
-            ),
-          ].sort((a, b) => a - b),
+          acceptanceCriteriaIndexes,
           reason: item.reason.trim(),
           priority: item.priority,
           assumption:
