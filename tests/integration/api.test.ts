@@ -553,3 +553,158 @@ describe('DELETE /api/projects/:projectId', () => {
     );
   });
 });
+
+
+describe('AI coverage gap workflow', () => {
+  it('rejects AI coverage analysis for an unknown requirement before calling AI', async () => {
+    const res = await request(app)
+      .post('/api/coverage-gaps/REQ-MISSING-001/analyze')
+      .query({ projectId: 'shopsphere-demo' });
+
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty(
+      'error',
+      'Requirement not found in this project.',
+    );
+  });
+
+  it('does not allow AI coverage suggestions to mutate the built-in demo', async () => {
+    const res = await request(app)
+      .post('/api/coverage-gaps/REQ-AUTH-001/accept-suggestions')
+      .query({ projectId: 'shopsphere-demo' })
+      .send({
+        suggestions: [
+          {
+            title: 'Demo mutation should fail',
+            description: 'The demo must remain read-only.',
+            type: 'functional',
+            acceptanceCriteriaIndexes: [0],
+            reason: 'Integration-test guardrail.',
+            priority: 'low',
+            assumption: null,
+          },
+        ],
+      });
+
+    expect(res.status).toBe(403);
+    expect(res.body).toHaveProperty(
+      'error',
+      'The built-in demo project is read-only.',
+    );
+  });
+
+  it('saves reviewed AI suggestions with acceptance-criteria refs and recalculates coverage', async () => {
+    const projectRes = await request(app)
+      .post('/api/projects')
+      .send({
+        name: 'AI Coverage Fixture',
+        shipKey: 'ACF',
+        template: 'blank',
+      });
+
+    expect(projectRes.status).toBe(201);
+    const projectId = projectRes.body.id as string;
+
+    const requirementRes = await request(app)
+      .post(`/api/projects/${projectId}/requirements`)
+      .send({
+        title: 'Password reset',
+        description: 'A user can reset a forgotten password.',
+        acceptanceCriteria: [
+          'A reset request sends a link.',
+          'An expired reset link is rejected.',
+        ],
+        domain: 'authentication',
+        criticality: 'high',
+        changed: false,
+      });
+
+    expect(requirementRes.status).toBe(201);
+    expect(requirementRes.body.requirements[0].id).toBe('ACF-1');
+
+    const firstSave = await request(app)
+      .post('/api/coverage-gaps/ACF-1/accept-suggestions')
+      .query({ projectId })
+      .send({
+        suggestions: [
+          {
+            title: 'Reset request sends a link',
+            description: 'Verify a valid reset request sends the user a reset link.',
+            type: 'functional',
+            acceptanceCriteriaIndexes: [0],
+            reason: 'Closes the first uncovered acceptance criterion.',
+            priority: 'high',
+            assumption: null,
+          },
+        ],
+      });
+
+    expect(firstSave.status).toBe(201);
+    expect(firstSave.body.addedCount).toBe(1);
+    expect(firstSave.body.evaluation).toMatchObject({
+      status: 'partial',
+      coveredCriteriaCount: 1,
+      uncoveredCriteriaIndexes: [1],
+    });
+
+    const projectAfterFirstSave = await request(app)
+      .get(`/api/projects/${projectId}`);
+
+    expect(projectAfterFirstSave.status).toBe(200);
+
+    const savedTest = projectAfterFirstSave.body.seededTests.find(
+      (testCase: { title: string }) =>
+        testCase.title === 'Reset request sends a link',
+    );
+
+    expect(savedTest).toBeDefined();
+    expect(savedTest.origin).toBe('suggested');
+    expect(savedTest.acceptanceCriteriaRefs).toEqual([
+      {
+        requirementId: 'ACF-1',
+        criterionIndex: 0,
+      },
+    ]);
+
+    const secondSave = await request(app)
+      .post('/api/coverage-gaps/ACF-1/accept-suggestions')
+      .query({ projectId })
+      .send({
+        suggestions: [
+          {
+            title: 'Expired reset link is rejected',
+            description: 'Verify an expired password reset link cannot be used.',
+            type: 'negative',
+            acceptanceCriteriaIndexes: [1],
+            reason: 'Closes the remaining deterministic coverage gap.',
+            priority: 'high',
+            assumption: null,
+          },
+        ],
+      });
+
+    expect(secondSave.status).toBe(201);
+    expect(secondSave.body.evaluation).toMatchObject({
+      status: 'full',
+      coveredCriteriaCount: 2,
+      uncoveredCriteriaIndexes: [],
+    });
+
+    const coverageRes = await request(app)
+      .get('/api/coverage-gaps')
+      .query({ projectId });
+
+    expect(coverageRes.status).toBe(200);
+
+    const evaluation = coverageRes.body.evaluations.find(
+      (item: { requirementId: string }) =>
+        item.requirementId === 'ACF-1',
+    );
+
+    expect(evaluation).toMatchObject({
+      status: 'full',
+      coveredCriteriaCount: 2,
+      totalCriteria: 2,
+    });
+  });
+});

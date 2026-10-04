@@ -25,6 +25,8 @@ import {
 import { generateTestSuggestions } from './services/testSuggestionService.js';
 import { buildTraceabilityMatrix } from './services/traceabilityService.js';
 import { computeCoverageGaps } from './services/coverageService.js';
+import { computeRequirementCoverage } from './services/requirementCoverageService.js';
+import { analyzeCoverageGapsWithAI } from './services/aiCoverageGapService.js';
 import { computeImpact } from './services/impactService.js';
 import { computeAllRiskScores } from './services/riskService.js';
 import { buildReleaseReadinessReport } from './services/reportService.js';
@@ -47,6 +49,7 @@ import {
   type ProjectWorkspace,
 } from './services/projectStoreService.js';
 import type {
+  AICoverageSuggestion,
   TestCase,
   TraceabilityLink,
 } from './types/models.js';
@@ -144,17 +147,16 @@ function sendMissingProject(res: express.Response): void {
 export function createApp(): express.Express {
   const app = express();
 
-  if (clerkConfigured) {
-    app.use(clerkMiddleware());
-  }
-
   if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
   }
 
-  // Clerk authentication runs in the real application,
+  // Clerk authentication runs in the configured application,
   // but not during the existing API integration test suite.
-  if (process.env.NODE_ENV !== 'test') {
+  if (
+    clerkConfigured &&
+    process.env.NODE_ENV !== 'test'
+  ) {
     app.use(clerkMiddleware());
   }
 
@@ -174,15 +176,6 @@ export function createApp(): express.Express {
   }
 
   app.use(express.json());
-
-  app.get('/api/auth/status', (req, res) => {
-  const { isAuthenticated, userId } = getAuth(req);
-
-  res.json({
-    authenticated: isAuthenticated,
-    userId: userId ?? null,
-  });
-});
 
   const aiRateLimiter = rateLimit({
     windowMs: 60_000,
@@ -967,6 +960,285 @@ export function createApp(): express.Express {
 
     res.json(report);
   });
+
+  app.post(
+    '/api/coverage-gaps/:requirementId/analyze',
+    aiRateLimiter,
+    async (req, res) => {
+      const runtime = buildProjectRuntime(req);
+
+      if (!runtime) {
+        sendMissingProject(res);
+        return;
+      }
+
+      const requirement = runtime.project.requirements.find(
+        (item) =>
+          item.id === req.params.requirementId,
+      );
+
+      if (!requirement) {
+        res.status(404).json({
+          error: 'Requirement not found in this project.',
+        });
+        return;
+      }
+
+      const evaluation = computeRequirementCoverage(
+        requirement,
+        runtime.allTestCases,
+        runtime.links,
+      );
+
+      const linkedTestIds = new Set(
+        runtime.links
+          .filter(
+            (link) =>
+              link.requirementId === requirement.id,
+          )
+          .map((link) => link.testCaseId),
+      );
+
+      const existingTests = runtime.allTestCases.filter(
+        (testCase) =>
+          linkedTestIds.has(testCase.id),
+      );
+
+      try {
+        const analysis =
+          await analyzeCoverageGapsWithAI(
+            requirement,
+            existingTests,
+            evaluation,
+          );
+
+        res.json(analysis);
+      } catch (error) {
+        console.error(
+          'AI coverage gap analysis failed:',
+          error,
+        );
+        res.status(500).json({
+          error: 'AI coverage gap analysis failed.',
+        });
+      }
+    },
+  );
+
+  app.post(
+    '/api/coverage-gaps/:requirementId/accept-suggestions',
+    (req, res) => {
+      const runtime = buildProjectRuntime(req);
+
+      if (!runtime) {
+        sendMissingProject(res);
+        return;
+      }
+
+      const { project } = runtime;
+
+      if (project.isDemo) {
+        res.status(403).json({
+          error:
+            'The built-in demo project is read-only.',
+        });
+        return;
+      }
+
+      const requirement = project.requirements.find(
+        (item) =>
+          item.id === req.params.requirementId,
+      );
+
+      if (!requirement) {
+        res.status(404).json({
+          error: 'Requirement not found in this project.',
+        });
+        return;
+      }
+
+      const suggestions = req.body?.suggestions;
+
+      if (
+        !Array.isArray(suggestions) ||
+        suggestions.length === 0 ||
+        suggestions.length > 20
+      ) {
+        res.status(400).json({
+          error:
+            'Select between 1 and 20 AI coverage suggestions.',
+        });
+        return;
+      }
+
+      const validTypes = new Set([
+        'functional',
+        'negative',
+        'boundary',
+        'security',
+        'edge',
+      ]);
+
+      const validPriorities = new Set([
+        'low',
+        'medium',
+        'high',
+      ]);
+
+      const normalized: AICoverageSuggestion[] = [];
+
+      for (const item of suggestions) {
+        if (
+          !item ||
+          typeof item.title !== 'string' ||
+          !item.title.trim() ||
+          item.title.length > 180 ||
+          typeof item.description !== 'string' ||
+          !item.description.trim() ||
+          item.description.length > 1200 ||
+          !validTypes.has(item.type) ||
+          typeof item.reason !== 'string' ||
+          !item.reason.trim() ||
+          item.reason.length > 900 ||
+          !validPriorities.has(item.priority) ||
+          !Array.isArray(
+            item.acceptanceCriteriaIndexes,
+          ) ||
+          item.acceptanceCriteriaIndexes.length === 0 ||
+          item.acceptanceCriteriaIndexes.some(
+            (index: unknown) =>
+              !Number.isInteger(index) ||
+              Number(index) < 0 ||
+              Number(index) >=
+                requirement.acceptanceCriteria.length,
+          ) ||
+          !(
+            item.assumption === null ||
+            item.assumption === undefined ||
+            typeof item.assumption === 'string'
+          )
+        ) {
+          res.status(400).json({
+            error:
+              'One or more AI coverage suggestions are invalid.',
+          });
+          return;
+        }
+
+        const acceptanceCriteriaIndexes =
+          Array.from(
+            new Set<number>(
+              (
+                item.acceptanceCriteriaIndexes as unknown[]
+              ).map((index) => Number(index)),
+            ),
+          ).sort((a, b) => a - b);
+
+        normalized.push({
+          title: item.title.trim(),
+          description: item.description.trim(),
+          type: item.type,
+          acceptanceCriteriaIndexes,
+          reason: item.reason.trim(),
+          priority: item.priority,
+          assumption:
+            typeof item.assumption === 'string' &&
+            item.assumption.trim()
+              ? item.assumption.trim().slice(0, 500)
+              : null,
+        });
+      }
+
+      const existingTitles = new Set(
+        project.seededTests.map((testCase) =>
+          testCase.title.trim().toLowerCase(),
+        ),
+      );
+
+      const uniqueSuggestions =
+        normalized.filter((suggestion) => {
+          const key =
+            suggestion.title.toLowerCase();
+
+          if (existingTitles.has(key)) {
+            return false;
+          }
+
+          existingTitles.add(key);
+          return true;
+        });
+
+      if (uniqueSuggestions.length === 0) {
+        res.status(409).json({
+          error:
+            'All selected suggestions already exist in this project.',
+        });
+        return;
+      }
+
+      const assignedIds = nextTestCaseIds(
+        project,
+        uniqueSuggestions.length,
+      );
+
+      uniqueSuggestions.forEach(
+        (suggestion, index) => {
+          const testCaseId = assignedIds[index];
+
+          project.seededTests.push({
+            id: testCaseId,
+            title: suggestion.title,
+            description: suggestion.description,
+            type: suggestion.type,
+            requirementIds: [requirement.id],
+            acceptanceCriteriaRefs:
+              suggestion.acceptanceCriteriaIndexes.map(
+                (criterionIndex) => ({
+                  requirementId: requirement.id,
+                  criterionIndex,
+                }),
+              ),
+            status: 'not_run',
+            automated: false,
+            origin: 'suggested',
+            notes: [
+              'AI coverage suggestion reviewed and accepted.',
+              `Priority: ${suggestion.priority}.`,
+              `Reason: ${suggestion.reason}`,
+              suggestion.assumption
+                ? `Assumption: ${suggestion.assumption}`
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' '),
+          });
+
+          project.traceabilityLinks.push({
+            requirementId: requirement.id,
+            testCaseId,
+            coverageType: 'partial',
+            notes:
+              'Added from reviewed Spec2Ship AI coverage-gap analysis.',
+          });
+        },
+      );
+
+      const saved = saveProject(project);
+
+      const evaluation =
+        computeRequirementCoverage(
+          requirement,
+          saved.seededTests,
+          saved.traceabilityLinks,
+        );
+
+      res.status(201).json({
+        addedCount: uniqueSuggestions.length,
+        assignedIds,
+        evaluation,
+      });
+    },
+  );
 
   app.get('/api/impact/:requirementId', (req, res) => {
     const { requirementId } = req.params;

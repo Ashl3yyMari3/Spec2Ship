@@ -15,7 +15,7 @@ export default function CoverageGapsPage(): React.ReactElement {
       <div className="page-header">
         <h1 className="page-header__title">Coverage Gaps</h1>
         <p className="page-header__subtitle">
-          Requirements with insufficient test coverage, by gap type
+          See which acceptance criteria are covered, find deterministic gaps, and use AI to suggest meaningful tests for your review.
         </p>
       </div>
 
