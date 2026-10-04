@@ -1,5 +1,7 @@
 import React from 'react';
-import type { TraceabilityMatrix } from '@backend/types/models';
+import type {
+  TraceabilityMatrix,
+} from '@backend/types/models';
 
 interface Props {
   matrix: TraceabilityMatrix;
@@ -8,47 +10,125 @@ interface Props {
 interface SummaryMetrics {
   totalRequirements: number;
   totalTestCases: number;
-  fullyCovered: number;
-  partiallyCovered: number;
-  noCoverage: number;
+  mappedRequirements: number;
+  unmappedRequirements: number;
+  orphanTests: number;
 }
 
-export function computeSummaryMetrics(matrix: TraceabilityMatrix): SummaryMetrics {
-  const totalRequirements = matrix.requirements.length;
-  const totalTestCases = matrix.testCases.length;
+export function computeSummaryMetrics(
+  matrix: TraceabilityMatrix,
+): SummaryMetrics {
+  const validRequirementIds = new Set(
+    matrix.requirements.map(
+      (requirement) => requirement.id,
+    ),
+  );
 
-  let fullyCovered = 0;
-  let partiallyCovered = 0;
-  let noCoverage = 0;
+  const linkIdsByRequirement =
+    new Map<string, Set<string>>();
 
-  for (const req of matrix.requirements) {
-    const reqLinks = matrix.links.filter((l) => l.requirementId === req.id);
-    if (reqLinks.length === 0) {
-      noCoverage++;
-    } else if (reqLinks.every((l) => l.coverageType === 'full')) {
-      fullyCovered++;
-    } else {
-      partiallyCovered++;
+  for (const requirement of matrix.requirements) {
+    linkIdsByRequirement.set(
+      requirement.id,
+      new Set(),
+    );
+  }
+
+  for (const link of matrix.links) {
+    linkIdsByRequirement
+      .get(link.requirementId)
+      ?.add(link.testCaseId);
+  }
+
+  for (const testCase of matrix.testCases) {
+    for (const requirementId of
+      testCase.requirementIds) {
+      if (
+        validRequirementIds.has(
+          requirementId,
+        )
+      ) {
+        linkIdsByRequirement
+          .get(requirementId)
+          ?.add(testCase.id);
+      }
     }
   }
 
-  return { totalRequirements, totalTestCases, fullyCovered, partiallyCovered, noCoverage };
+  const mappedRequirements =
+    matrix.requirements.filter(
+      (requirement) =>
+        (
+          linkIdsByRequirement.get(
+            requirement.id,
+          )?.size ?? 0
+        ) > 0,
+    ).length;
+
+  const linkedTestIds = new Set(
+    matrix.links.map(
+      (link) => link.testCaseId,
+    ),
+  );
+
+  const orphanTests = matrix.testCases.filter(
+    (testCase) =>
+      !linkedTestIds.has(testCase.id) &&
+      !testCase.requirementIds.some((id) =>
+        validRequirementIds.has(id),
+      ),
+  ).length;
+
+  return {
+    totalRequirements:
+      matrix.requirements.length,
+    totalTestCases:
+      matrix.testCases.length,
+    mappedRequirements,
+    unmappedRequirements:
+      matrix.requirements.length -
+      mappedRequirements,
+    orphanTests,
+  };
 }
 
-interface MetricCardProps {
+function MetricCard({
+  label,
+  value,
+  variant = 'default',
+}: {
   label: string;
   value: number;
-  variant?: 'default' | 'success' | 'warning' | 'danger';
-}
-
-function MetricCard({ label, value, variant = 'default' }: MetricCardProps): React.ReactElement {
-  const variantMap: Record<string, { border: string; shadow: string; color: string }> = {
-    default: { border: 'var(--border-glass)',        shadow: 'var(--shadow-violet)',   color: 'var(--violet-light)' },
-    success: { border: 'var(--low-border)',           shadow: 'var(--shadow-low)',      color: 'var(--low-text)' },
-    warning: { border: 'var(--high-border)',          shadow: 'var(--shadow-high)',     color: 'var(--high-text)' },
-    danger:  { border: 'var(--critical-border)',      shadow: 'var(--shadow-critical)', color: 'var(--critical-text)' },
+  variant?:
+    | 'default'
+    | 'success'
+    | 'warning'
+    | 'danger';
+}): React.ReactElement {
+  const variantMap = {
+    default: {
+      border: 'var(--border-glass)',
+      shadow: 'var(--shadow-violet)',
+      color: 'var(--violet-light)',
+    },
+    success: {
+      border: 'var(--low-border)',
+      shadow: 'var(--shadow-low)',
+      color: 'var(--low-text)',
+    },
+    warning: {
+      border: 'var(--high-border)',
+      shadow: 'var(--shadow-high)',
+      color: 'var(--high-text)',
+    },
+    danger: {
+      border: 'var(--critical-border)',
+      shadow: 'var(--shadow-critical)',
+      color: 'var(--critical-text)',
+    },
   };
-  const v = variantMap[variant];
+
+  const style = variantMap[variant];
 
   return (
     <div
@@ -56,34 +136,85 @@ function MetricCard({ label, value, variant = 'default' }: MetricCardProps): Rea
         background: 'var(--bg-glass)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
-        border: `1px solid ${v.border}`,
+        border: `1px solid ${style.border}`,
         borderRadius: 'var(--radius-xl)',
         padding: '18px 22px',
         flex: '1 1 150px',
         minWidth: 0,
-        boxShadow: `var(--shadow-card), ${v.shadow}`,
+        boxShadow: `var(--shadow-card), ${style.shadow}`,
       }}
     >
-      <div style={{ fontSize: '36px', fontWeight: 800, color: v.color, lineHeight: 1.1 }}>
+      <div
+        style={{
+          fontSize: '34px',
+          fontWeight: 800,
+          color: style.color,
+          lineHeight: 1.1,
+        }}
+      >
         {value}
       </div>
-      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '5px', fontWeight: 500 }}>
+
+      <div
+        style={{
+          fontSize: '11px',
+          color: 'var(--text-muted)',
+          marginTop: '5px',
+          fontWeight: 600,
+        }}
+      >
         {label}
       </div>
     </div>
   );
 }
 
-export default function TraceabilitySummary({ matrix }: Props): React.ReactElement {
-  const metrics = computeSummaryMetrics(matrix);
+export default function TraceabilitySummary({
+  matrix,
+}: Props): React.ReactElement {
+  const metrics =
+    computeSummaryMetrics(matrix);
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '24px' }}>
-      <MetricCard label="Total Requirements" value={metrics.totalRequirements} variant="default" />
-      <MetricCard label="Total Test Cases" value={metrics.totalTestCases} variant="default" />
-      <MetricCard label="Fully Covered" value={metrics.fullyCovered} variant="success" />
-      <MetricCard label="Partially Covered" value={metrics.partiallyCovered} variant="warning" />
-      <MetricCard label="No Coverage" value={metrics.noCoverage} variant="danger" />
+    <div
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '12px',
+        marginBottom: '20px',
+      }}
+    >
+      <MetricCard
+        label="Requirements"
+        value={metrics.totalRequirements}
+      />
+      <MetricCard
+        label="Test Cases"
+        value={metrics.totalTestCases}
+      />
+      <MetricCard
+        label="Mapped Requirements"
+        value={metrics.mappedRequirements}
+        variant="success"
+      />
+      <MetricCard
+        label="Unmapped Requirements"
+        value={metrics.unmappedRequirements}
+        variant={
+          metrics.unmappedRequirements > 0
+            ? 'danger'
+            : 'success'
+        }
+      />
+      <MetricCard
+        label="Unmapped Tests"
+        value={metrics.orphanTests}
+        variant={
+          metrics.orphanTests > 0
+            ? 'warning'
+            : 'success'
+        }
+      />
     </div>
   );
 }
