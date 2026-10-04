@@ -139,18 +139,49 @@ function coverageLabel(
 ): string {
   switch (status) {
     case 'full':
-      return 'Full';
+      return 'All criteria mapped';
     case 'partial':
-      return 'Partial';
+      return 'Some criteria mapped';
     case 'none':
-      return 'None';
+      return 'No criteria mapped';
     default:
       return status;
   }
 }
 
 function statusLabel(status: TestStatus): string {
-  return status.replace('_', ' ');
+  return status
+    .replace('_', ' ')
+    .replace(/\b\w/g, (letter) =>
+      letter.toUpperCase(),
+    );
+}
+
+function typeLabel(type: TestType): string {
+  return (
+    type.charAt(0).toUpperCase() +
+    type.slice(1)
+  );
+}
+
+function compactId(
+  id: string,
+  maxLength = 18,
+): string {
+  if (id.length <= maxLength) {
+    return id;
+  }
+
+  const startLength = Math.max(
+    7,
+    Math.floor((maxLength - 1) * 0.58),
+  );
+  const endLength =
+    maxLength - startLength - 1;
+
+  return `${id.slice(0, startLength)}…${id.slice(
+    -endLength,
+  )}`;
 }
 
 function FilterBar({
@@ -219,10 +250,18 @@ function FilterBar({
         }
         aria-label="Filter by coverage"
       >
-        <option value="all">All Coverage</option>
-        <option value="full">Full</option>
-        <option value="partial">Partial</option>
-        <option value="none">None</option>
+        <option value="all">
+          All Criterion Mapping
+        </option>
+        <option value="full">
+          All Criteria Mapped
+        </option>
+        <option value="partial">
+          Some Criteria Mapped
+        </option>
+        <option value="none">
+          No Criteria Mapped
+        </option>
       </select>
 
       <select
@@ -340,8 +379,12 @@ function RequirementRelationshipCard({
     >
       <div className="trace-requirement-card__header">
         <div>
+          <h2>{requirement.title}</h2>
+
           <div className="trace-requirement-card__meta">
-            <code>{requirement.id}</code>
+            <code title={requirement.id}>
+              {compactId(requirement.id)}
+            </code>
 
             <span
               className={`trace-coverage trace-coverage--${coverage}`}
@@ -363,8 +406,6 @@ function RequirementRelationshipCard({
               </span>
             )}
           </div>
-
-          <h2>{requirement.title}</h2>
           <p>{requirement.description}</p>
         </div>
 
@@ -431,50 +472,84 @@ function RequirementRelationshipCard({
                 className="trace-test-row"
                 key={testCase.id}
               >
-                <div className="trace-test-row__identity">
-                  <code>{testCase.id}</code>
-                  <div>
-                    <strong>
-                      {testCase.title}
-                    </strong>
-                    <span>
-                      {testCase.type}
-                      {' · '}
-                      {statusLabel(
-                        testCase.status,
-                      )}
-                    </span>
+                <div className="trace-test-row__main">
+                  <div className="trace-test-row__identity">
+                    <div>
+                      <strong>
+                        {testCase.title}
+                      </strong>
+
+                      <span>
+                        {typeLabel(testCase.type)}
+                        {' · '}
+                        {statusLabel(
+                          testCase.status,
+                        )}
+                      </span>
+
+                      <code title={testCase.id}>
+                        {compactId(testCase.id)}
+                      </code>
+                    </div>
+                  </div>
+
+                  <div className="trace-test-row__criteria">
+                    {refs.length === 0 ? (
+                      <span className="trace-test-row__unmapped">
+                        Needs criteria mapping
+                      </span>
+                    ) : (
+                      <>
+                        <small>Covers</small>
+                        {refs.map((index) => (
+                          <span
+                            key={index}
+                            title={
+                              requirement
+                                .acceptanceCriteria[
+                                index
+                              ]
+                            }
+                          >
+                            AC {index + 1}
+                          </span>
+                        ))}
+                      </>
+                    )}
                   </div>
                 </div>
 
-                <div className="trace-test-row__criteria">
-                  {refs.length === 0 ? (
-                    <span className="trace-test-row__unmapped">
-                      No AC refs
-                    </span>
-                  ) : (
-                    refs.map((index) => (
-                      <span
-                        key={index}
-                        title={
-                          requirement
-                            .acceptanceCriteria[
-                            index
-                          ]
-                        }
-                      >
-                        AC {index + 1}
-                      </span>
-                    ))
-                  )}
-                </div>
+                <details className="trace-test-row__details">
+                  <summary>
+                    Technical details
+                  </summary>
 
-                <span
-                  className={`trace-link-kind trace-link-kind--${link?.coverageType ?? 'mapped'}`}
-                >
-                  {link?.coverageType ??
-                    'mapped'}
-                </span>
+                  <div>
+                    <p>
+                      <strong>Full Test ID</strong>
+                      <code>{testCase.id}</code>
+                    </p>
+
+                    <p>
+                      <strong>
+                        Relationship
+                      </strong>
+                      <span>
+                        Linked to this requirement
+                      </span>
+                    </p>
+
+                    <p>
+                      <strong>
+                        Link setting
+                      </strong>
+                      <span>
+                        {link?.coverageType ??
+                          'mapped'}
+                      </span>
+                    </p>
+                  </div>
+                </details>
               </div>
             );
           })}
@@ -510,8 +585,8 @@ function RequirementRelationshipCard({
           }
         >
           {selected
-            ? 'Hide detail'
-            : 'Open detail'}
+            ? 'Hide requirement details'
+            : 'View requirement details'}
         </button>
       </div>
     </article>
@@ -560,13 +635,13 @@ function MatrixView({
     <div className="trace-matrix-wrap">
       <div className="trace-matrix__legend">
         <span>
-          <i className="is-full" /> Full link
+          <i className="is-full" /> Linked
         </span>
         <span>
-          <i className="is-partial" /> Partial link
+          <i className="is-partial" /> Partially linked
         </span>
         <span>
-          <i className="is-none" /> No link
+          <i className="is-none" /> Not linked
         </span>
       </div>
 
@@ -585,7 +660,9 @@ function MatrixView({
                   key={testCase.id}
                   title={testCase.title}
                 >
-                  <span>{testCase.id}</span>
+                  <span title={testCase.id}>
+                    {compactId(testCase.id, 14)}
+                  </span>
                 </th>
               ))}
             </tr>
@@ -744,7 +821,7 @@ function OrphanTests({
   return (
     <details className="trace-orphans">
       <summary>
-        Unmapped tests ({orphanTests.length})
+        Tests not linked to a requirement ({orphanTests.length})
       </summary>
 
       <div>
@@ -895,8 +972,7 @@ export default function TraceabilityMatrixExplorer({
         <div>
           <p>Relationship Explorer</p>
           <span>
-            Follow requirements into their linked
-            tests and acceptance-criteria mappings.
+            See which tests support each requirement and which criteria they cover.
           </span>
         </div>
 
