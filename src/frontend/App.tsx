@@ -28,6 +28,7 @@ import LandingPage from './pages/LandingPage';
 
 import { ProjectProvider } from './context/ProjectContext';
 import { CopilotProvider } from './context/CopilotContext';
+import LivingTicketPage from './pages/LivingTicketPage';
 
 export default function App(): React.ReactElement {
   return (
@@ -56,6 +57,15 @@ export default function App(): React.ReactElement {
                   element={
                     <RequireWorkspace>
                       <RequirementsPage />
+                    </RequireWorkspace>
+                  }
+                />
+
+                <Route
+                  path="/tickets/:requirementId"
+                  element={
+                    <RequireWorkspace>
+                      <LivingTicketPage />
                     </RequireWorkspace>
                   }
                 />

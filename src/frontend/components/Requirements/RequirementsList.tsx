@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import type { Requirement, Criticality } from '@backend/types/models';
 import AIRequirementAnalysis from './AIRequirementAnalysis';
 
@@ -115,6 +116,16 @@ export default function RequirementsList({
               </ol>
             </div>
           )}
+          <div style={{ marginTop: 16, marginBottom: 16 }}>
+            <Link
+              to={`/tickets/${encodeURIComponent(req.id)}`}
+              className="btn btn--primary"
+              aria-label={`Open Living Ticket for ${req.title}`}
+            >
+              Open Living Ticket →
+            </Link>
+          </div>
+
           <AIRequirementAnalysis requirement={req} />
         </article>
       ))}
