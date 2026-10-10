@@ -748,6 +748,96 @@ export function createApp(): express.Express {
   // Project-scoped QA data
   // ------------------------------------------------------------------
 
+  app.post(
+    '/api/projects/:projectId/requirements/:requirementId/criterion-links',
+    (req, res) => {
+      const project = getProject(req.params.projectId);
+
+      if (!project) {
+        sendMissingProject(res);
+        return;
+      }
+
+      if (project.isDemo) {
+        res.status(403).json({
+          error: 'The built-in demo project is read-only.',
+        });
+        return;
+      }
+
+      const requirement = project.requirements.find(
+        (item) => item.id === req.params.requirementId,
+      );
+
+      if (!requirement) {
+        res.status(404).json({
+          error: 'Requirement not found.',
+        });
+        return;
+      }
+
+      const { testCaseId, criterionIndex } = req.body ?? {};
+
+      if (
+        typeof testCaseId !== 'string' ||
+        !Number.isInteger(criterionIndex) ||
+        criterionIndex < 0 ||
+        criterionIndex >= requirement.acceptanceCriteria.length
+      ) {
+        res.status(400).json({
+          error: 'A valid test ID and criterion index are required.',
+        });
+        return;
+      }
+
+      const testCase = project.seededTests.find(
+        (test) => test.id === testCaseId,
+      );
+
+      const hasRequirementLink = project.traceabilityLinks.some(
+        (link) =>
+          link.requirementId === requirement.id &&
+          link.testCaseId === testCaseId,
+      );
+
+      if (
+        !testCase ||
+        !testCase.requirementIds.includes(requirement.id) ||
+        !hasRequirementLink
+      ) {
+        res.status(400).json({
+          error: 'Choose a saved test already linked to this requirement.',
+        });
+        return;
+      }
+
+      testCase.acceptanceCriteriaRefs ??= [];
+
+      const alreadyLinked = testCase.acceptanceCriteriaRefs.some(
+        (ref) =>
+          ref.requirementId === requirement.id &&
+          ref.criterionIndex === criterionIndex,
+      );
+
+      if (!alreadyLinked) {
+        testCase.acceptanceCriteriaRefs.push({
+          requirementId: requirement.id,
+          criterionIndex,
+        });
+
+        saveProject(project);
+      }
+
+      res.json({
+        requirementId: requirement.id,
+        testCaseId,
+        criterionIndex,
+        alreadyLinked,
+        linked: true,
+      });
+    },
+  );
+
   app.get('/api/requirements', (req, res) => {
     const runtime = buildProjectRuntime(req);
 
